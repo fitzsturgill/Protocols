@@ -26,7 +26,7 @@ if isempty(fieldnames(S))  % If settings file was an empty struct, populate stru
     S.GUI.LightIntensity = 255;
     S.GUI.SessionStartDelay =1;
     S.GUI.WaitForPoke1=2;
-    
+    S.GUI.eitherSide = 0;
 end
 
 % Initialize parameter GUI plugin
@@ -35,12 +35,11 @@ BpodParameterGUI('init', S);
 MaxTrials = 1000;
 
 %% generate randomized trial types
-ra = rand(1,MaxTrials);
-TrialTypes(ra < 0.5) = 1; %  50% of trials are type 1
-TrialTypes(ra >= 0.5) = 2; % 50% of trials are type 2
+TrialTypes = randi(2, 1, 1000); % 
 
     
-BpodSystem.Data.TrialTypes= []; % The trial type of each trial completed will be added here
+Outcomes = []; % The trial type of each trial completed (equivalent to the outcome) will be added here
+ITIs = []; % time in between trials
 
 
 %% Initialize plots
@@ -51,21 +50,20 @@ BpodNotebook('init');
 
 %%
 outcomeFig = ensureFigure('Outcome_plot', 1);
-scrsz = get(groot,'ScreenSize'); 
-set(outcomeFig, 'Position', [25 scrsz(4)/2-150 scrsz(3)-50  scrsz(4)/6],'numbertitle','off', 'MenuBar', 'none'); %, 'Resize', 'off');    
-outcomeAxes = axes('Parent', outcomeFig);
-placeHolder = line([1 1], [0 2], 'Color', [0.8 0.8 0.8], 'LineWidth', 4, 'Parent', outcomeAxes);    
-hold on;
-outcomes = zeros(1, MaxTrials);
-outcomesHandle = scatter(1:MaxTrials, outcomes);
+% scrsz = get(groot,'ScreenSize'); 
+% set(outcomeFig, 'Position', [25 scrsz(4)/2-150 scrsz(3)-50  scrsz(4)/6],'numbertitle','off', 'MenuBar', 'none'); %, 'Resize', 'off');    
+outcomeAxis = subplot(2,1,1);
+% placeHolder = line([1 1], [0 2], 'Color', [0.8 0.8 0.8], 'LineWidth', 4, 'Parent', outcomeAxes);    
+% outcomesHandle = scatter([], []);
 outcomeSpan = 20;
-set(outcomeAxes, 'XLim', [0 outcomeSpan]);
+
+ITIsAxis = subplot(2,1,2);
+xlabel('trial #'); ylabel('ITI');
 %% initialize trial outcome array
 
 
 %% This code initializes the Total Reward Display plugin, and updates it on each trial. 
 TotalRewardDisplay('init');
-RewardAmount = S.GUI.RewardAmount;
 
 %% Main trial loop
 for currentTrial = 1:MaxTrials
@@ -79,52 +77,70 @@ for currentTrial = 1:MaxTrials
             
     BaselineLight={'PWM1', S.GUI.BaselineIntensity, 'PWM3', S.GUI.BaselineIntensity};            
 
-    sma = NewStateMatrix(); % Assemble state matrix
-    
+    sma = NewStateMatrix(); % Assemble state matrix    
     sma = AddState(sma, 'Name', 'WaitForPoke1', ...
         'Timer', 0,...
         'StateChangeConditions', {'Port1In', StateOnLeftPoke, 'Port3In', StateOnRightPoke},...
-        'OutputActions', BaselineLight); 
+        'OutputActions', BaselineLight);
     sma = AddState(sma, 'Name', 'LeftReward', ...
         'Timer', LeftValveTime,...
-        'StateChangeConditions', {'Tup', 'Drinking'},...
+        'StateChangeConditions', {'Tup', 'DrinkingLeft'},...
         'OutputActions', ValveOutputandRewardLight1); 
     sma = AddState(sma, 'Name', 'RightReward', ...
         'Timer', RightValveTime,...
-        'StateChangeConditions', {'Tup', 'Drinking'},...
+        'StateChangeConditions', {'Tup', 'DrinkingRight'},...
         'OutputActions', ValveOutputandRewardLight3); 
-    sma = AddState(sma, 'Name', 'Drinking', ...
+    sma = AddState(sma, 'Name', 'DrinkingLeft', ...
         'Timer', 10,...
-        'StateChangeConditions', {'Tup', 'exit', 'Port1Out', 'ConfirmPortOut', 'Port3Out', 'ConfirmPortOut'},...
-        'OutputActions', BaselineLight);
-    sma = AddState(sma, 'Name', 'ConfirmPortOut', ... 
+        'StateChangeConditions', {'Tup', 'exit', 'Port1Out', 'ConfirmPortOutLeft'},...
+        'OutputActions', ValveOutputandRewardLight1);
+    sma = AddState(sma, 'Name', 'ConfirmPortOutLeft', ... 
         'Timer', S.GUI.PortOutRegDelay,...
-        'StateChangeConditions', {'Tup', 'exit', 'Port1In', 'Drinking', 'Port3In', 'Drinking'},...
-        'OutputActions', BaselineLight);
+        'StateChangeConditions', {'Tup', 'exit', 'Port1In', 'DrinkingLeft'},...
+        'OutputActions', ValveOutputandRewardLight1);
+    sma = AddState(sma, 'Name', 'DrinkingRight', ...
+        'Timer', 10,...
+        'StateChangeConditions', {'Tup', 'exit', 'Port3Out', 'ConfirmPortOutRight'},...
+        'OutputActions', ValveOutputandRewardLight3);
+    sma = AddState(sma, 'Name', 'ConfirmPortOutRight', ... 
+        'Timer', S.GUI.PortOutRegDelay,...
+        'StateChangeConditions', {'Tup', 'exit', 'Port3In', 'Drinking'},...
+        'OutputActions', ValveOutputandRewardLight3);
+    
     
     SendStateMatrix(sma);
     RawEvents = RunStateMatrix;
     if ~isempty(fieldnames(RawEvents)) % If trial data was returned
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
-        if isfield(BpodSystem.Data.RawEvents.Trial{currentTrial}, 'Events')
-            if isfield(BpodSystem.Data.RawEvents.Trial{end}.Events, 'Port1In')
-                outcomes(currentTrial) = 1; %Left
-            else
-                outcomes(currentTrial) = 2; %Right
-            end
+        if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.LeftReward(1))
+            Outcomes(currentTrial) = 1; %Left
+        else
+            Outcomes(currentTrial) = 2; %Right
         end
         
-                % update outcome plot to reflect currently executed trial
-        set(outcomeAxes, 'XLim', [max(0, currentTrial - round(outcomeSpan/2)) min(MaxTrials, currentTrial + round(outcomeSpan/2))]);
-        set(placeHolder, 'XData', [currentTrial currentTrial]);
-        set(outcomesHandle, 'YData', outcomes);
+        if currentTrial == 1
+            ITIs(1) = NaN;
+        else
+            ITIs(currentTrial) = BpodSystem.Data.TrialStartTimestamp(currentTrial) - BpodSystem.Data.TrialStartTimestamp(currentTrial - 1);
+        end
+        % update outcome plot 
+        plot(outcomeAxis, Outcomes, 'o');
+        set(outcomeAxis, 'XLim', [max(0, currentTrial - outcomeSpan) min(MaxTrials, currentTrial)]);
+        
+        % update ITIs plot
+        plot(ITIsAxis, ITIs, 'o');
+%         set(placeHolder, 'XData', [currentTrial currentTrial]);
+
         
         
         BpodSystem.Data = BpodNotebook('sync', BpodSystem.Data); % Sync with Bpod notebook plugin
         BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
-        BpodSystem.Data.TrialTypes(currentTrial) = TrialTypes(currentTrial); % Adds the trial type of the current trial to data
+        BpodSystem.Data.Outcomes = Outcomes; % Adds the trial type of the current trial to data
+        BpodSystem.Data.ITIs = ITIs;
+        
         %UpdateSideOutcomePlot(TrialTypes, BpodSystem.Data);
-        UpdateTotalRewardDisplay(S.GUI.RewardAmount, currentTrial);
+%         UpdateTotalRewardDisplay(S.GUI.RewardAmount, currentTrial);
+        TotalRewardDisplay('add', RewardAmount); % you can't comlete a trial without achieving a reward (if you are a mouse!)
         SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
     end
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
@@ -140,18 +156,18 @@ if ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Drinking(1))
     TotalRewardDisplay('add', RewardAmount);
 end
 
-function UpdateSideOutcomePlot(TrialTypes, Data)
-global BpodSystem
-Outcomes = zeros(1,BpodSystem.Data.nTrials);
-for x = 1:BpodSystem.Data.nTrials
-    if ~isnan(Data.RawEvents.Trial{x}.States.Drinking(1))
-        Outcomes(x) = 1;
-    else
-        Outcomes(x) = 3;
-    end
-
-%TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',BpodSystem.Data.nTrials+1,TrialTypes,Outcomes)
-end
+% function UpdateSideOutcomePlot(TrialTypes, Data)
+% global BpodSystem
+% Outcomes = zeros(1,BpodSystem.Data.nTrials);
+% for x = 1:BpodSystem.Data.nTrials
+%     if ~isnan(Data.RawEvents.Trial{x}.States.Drinking(1))
+%         Outcomes(x) = 1;
+%     else
+%         Outcomes(x) = 3;
+%     end
+% 
+% %TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',BpodSystem.Data.nTrials+1,TrialTypes,Outcomes)
+% end
 
 
 
