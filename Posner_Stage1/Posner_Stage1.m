@@ -26,7 +26,7 @@ if isempty(fieldnames(S))  % If settings file was an empty struct, populate stru
     S.GUI.LightIntensity = 255;
     S.GUI.SessionStartDelay =1;
     S.GUI.WaitForPoke1=2;
-    S.GUI.eitherSide = 0;
+    S.GUI.eitherSide = 1; % allow mouse to be rewarded for right and left pokes rather than randomly for either right or left poke (requires exploration if set to 0)
 end
 
 % Initialize parameter GUI plugin
@@ -43,23 +43,16 @@ ITIs = []; % time in between trials
 
 
 %% Initialize plots
-% BpodSystem.ProtocolFigures.SideOutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
-% BpodSystem.GUIHandles.SideOutcomePlot = axes('Position', [.075 .3 .89 .6]);
-% SideOutcomePlot(BpodSystem.GUIHandles.SideOutcomePlot,'init');
+
 BpodNotebook('init');
 
 %%
 outcomeFig = ensureFigure('Outcome_plot', 1);
-% scrsz = get(groot,'ScreenSize'); 
-% set(outcomeFig, 'Position', [25 scrsz(4)/2-150 scrsz(3)-50  scrsz(4)/6],'numbertitle','off', 'MenuBar', 'none'); %, 'Resize', 'off');    
 outcomeAxis = subplot(2,1,1);
-% placeHolder = line([1 1], [0 2], 'Color', [0.8 0.8 0.8], 'LineWidth', 4, 'Parent', outcomeAxes);    
-% outcomesHandle = scatter([], []);
 outcomeSpan = 20;
-
 ITIsAxis = subplot(2,1,2);
 xlabel('trial #'); ylabel('ITI');
-%% initialize trial outcome array
+
 
 
 %% This code initializes the Total Reward Display plugin, and updates it on each trial. 
@@ -72,13 +65,22 @@ for currentTrial = 1:MaxTrials
   
     ValveOutputandRewardLight1 = {'ValveState', 1, 'PWM1', S.GUI.BaselineIntensity + S.GUI.LightIntensity};   
     ValveOutputandRewardLight3 = {'ValveState', 4, 'PWM3', S.GUI.BaselineIntensity + S.GUI.LightIntensity};
-    StateOnLeftPoke = 'LeftReward'; 
-    StateOnRightPoke = 'RightReward';
+    
+    if S.GUI.eitherSide
+        StateOnLeftPoke = 'LeftReward'; 
+        StateOnRightPoke = 'RightReward';
+    elseif TrialTypes(currentTrial) == 1
+        StateOnLeftPoke = 'LeftReward'; 
+        StateOnRightPoke = 'WaitForPoke';        
+    else
+        StateOnLeftPoke = 'WaitForPoke'; 
+        StateOnRightPoke = 'RightReward';        
+    end
             
     BaselineLight={'PWM1', S.GUI.BaselineIntensity, 'PWM3', S.GUI.BaselineIntensity};            
 
     sma = NewStateMatrix(); % Assemble state matrix    
-    sma = AddState(sma, 'Name', 'WaitForPoke1', ...
+    sma = AddState(sma, 'Name', 'WaitForPoke', ...
         'Timer', 0,...
         'StateChangeConditions', {'Port1In', StateOnLeftPoke, 'Port3In', StateOnRightPoke},...
         'OutputActions', BaselineLight);
@@ -123,13 +125,13 @@ for currentTrial = 1:MaxTrials
         else
             ITIs(currentTrial) = BpodSystem.Data.TrialStartTimestamp(currentTrial) - BpodSystem.Data.TrialStartTimestamp(currentTrial - 1);
         end
+        
         % update outcome plot 
         plot(outcomeAxis, Outcomes, 'o');
         set(outcomeAxis, 'XLim', [max(0, currentTrial - outcomeSpan) min(MaxTrials, currentTrial)]);
         
         % update ITIs plot
         plot(ITIsAxis, ITIs, 'o');
-%         set(placeHolder, 'XData', [currentTrial currentTrial]);
 
         
         
@@ -138,11 +140,11 @@ for currentTrial = 1:MaxTrials
         BpodSystem.Data.Outcomes = Outcomes; % Adds the trial type of the current trial to data
         BpodSystem.Data.ITIs = ITIs;
         
-        %UpdateSideOutcomePlot(TrialTypes, BpodSystem.Data);
-%         UpdateTotalRewardDisplay(S.GUI.RewardAmount, currentTrial);
+
         TotalRewardDisplay('add', RewardAmount); % you can't comlete a trial without achieving a reward (if you are a mouse!)
         SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
     end
+    
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     if BpodSystem.BeingUsed == 0
         return
@@ -150,24 +152,8 @@ for currentTrial = 1:MaxTrials
     
 end
 
-function UpdateTotalRewardDisplay(RewardAmount, currentTrial)
-global BpodSystem
-if ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Drinking(1))
-    TotalRewardDisplay('add', RewardAmount);
-end
 
-% function UpdateSideOutcomePlot(TrialTypes, Data)
-% global BpodSystem
-% Outcomes = zeros(1,BpodSystem.Data.nTrials);
-% for x = 1:BpodSystem.Data.nTrials
-%     if ~isnan(Data.RawEvents.Trial{x}.States.Drinking(1))
-%         Outcomes(x) = 1;
-%     else
-%         Outcomes(x) = 3;
-%     end
-% 
-% %TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',BpodSystem.Data.nTrials+1,TrialTypes,Outcomes)
-% end
+
 
 
 
