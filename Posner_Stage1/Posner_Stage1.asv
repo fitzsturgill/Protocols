@@ -106,11 +106,10 @@ for currentTrial = 1:MaxTrials
         'OutputActions', ValveOutputandRewardLight3);
     sma = AddState(sma, 'Name', 'ConfirmPortOutRight', ... 
         'Timer', S.GUI.PortOutRegDelay,...
-        'StateChangeConditions', {'Tup', 'exit', 'Port3In', 'DrinkingRight'},...
+        'StateChangeConditions', {'Tup', 'exit', 'Port3In', 'Drinking'},...
         'OutputActions', ValveOutputandRewardLight3);
     
-    
-    SendStateMatrix(sma);
+  bppbbbbbiibpoddbpodbpdobpodbpoidbpodbpodbpodbpodbpodbbpodbpodbpodbpobpodbpobpodbpodbpodbpodbpodbpobdbpodbpodbpodbppodjfjkfkf k         SendStateMatrix(sma);
     RawEvents = RunStateMatrix;
     if ~isempty(fieldnames(RawEvents)) % If trial data was returned
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
@@ -141,7 +140,7 @@ for currentTrial = 1:MaxTrials
         BpodSystem.Data.ITIs = ITIs;
         
 
-        TotalRewardDisplay('add', S.GUI.RewardAmount); % you can't comlete a trial without achieving a reward (if you are a mouse!)
+        TotalRewardDisplay('add', RewardAmount); % you can't comlete a trial without achieving a reward (if you are a mouse!)
         SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
     end
     
