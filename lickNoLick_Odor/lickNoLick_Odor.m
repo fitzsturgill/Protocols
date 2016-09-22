@@ -28,7 +28,9 @@ function lickNoLick_Odor
         S.PreCsRecording = 4;
         S.PostOutcomeRecording = 3;
         S.currentValve = []; % holds odor valve # for current trial
-        S.RewardValveTime =  GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+        S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+        S.RewardValveCode = 1;
+        S.PunishValveCode = 2;
     end
 
     %% Pause and wait for user to edit parameter GUI 
@@ -47,11 +49,17 @@ function lickNoLick_Odor
 
     %% Initialize Sound Stimuli
     SF = 192000; 
+    
     % linear ramp of sound for 10ms at onset and offset
     neutralTone = taperedSineWave(SF, S.ToneFreq, S.ToneDuration, 0.01); % 10ms taper
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+    
+    % brown noise (house light equivalent) signaling intertrial interval
+%     S.GUI.NoLick = length of sounds
+%     use quentin's sound generator function???
+
     
     %% Initialize olfactometer and point grey camera
     % retrieve machine specific olfactometer settings
@@ -132,16 +140,18 @@ function lickNoLick_Odor
                 noLickOutcome = 'Neutral';
             case 2
                 OdorValve = S.GUI.Odor2Valve;
-                lickOutcome = 'Reward';
+                lickOutcome = 'Punish';
                 noLickOutcome = 'Neutral';
-            case 1
+            case 3
+                OdorValve = S.GUI.Odor1Valve;
+                lickOutcome = 'Punish';
+                noLickOutcome = 'Neutral';
+            case 4
                 OdorValve = S.GUI.Odor1Valve;
                 lickOutcome = 'Reward';
                 noLickOutcome = 'Neutral';
-            case 1
-                OdorValve = S.GUI.Odor1Valve;
-                lickOutcome = 'Reward';
-                noLickOutcome = 'Neutral';                
+            otherwise
+        end
 
         %% update odor valve number for current trial
         slaveResponse = updateValveSlave(valveSlave, OdorValve); 
@@ -160,6 +170,7 @@ function lickNoLick_Odor
         BpodSystem.Data.Settings = S; % is this necessary???
         %% Assemble state matrix
         sma = NewStateMatrix(); 
+        sma = SetGlobalTimer(sma,1,S.GUI.Answer); % post cue   
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'ITI'},...
@@ -186,15 +197,38 @@ function lickNoLick_Odor
             'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});
         sma = AddState(sma, 'Name', 'AnswerDelay', ... 
             'Timer', S.GUI.AnswerDelay,...
-            'StateChangeConditions', {'Tup', 'Answer'},...
+            'StateChangeConditions', {'Tup', 'Answer1'},...
             'OutputActions', {});
-        sma = AddState(sma, 'Name', 'Outcome',... % dummy state for alignment, globalcounter determine3s next state
+        sma = AddState(sma, 'Name', 'AnswerStart', ... 
             'Timer', 0,...
-            'StateChangeConditions', {'Tup', 
-        sma = AddState(sma,'Name', 'Us', ...
-            'Timer',UsTime,... % time will be 0 for omission
+            'StateChangeConditions', {'Tup', 'AnswerNoLick'},...
+            'OutputActions', {'GlobalTimerTrig', 1});
+        sma = AddState(sma, 'Name', 'AnswerNoLick', ... 
+            'Timer', 0,...
+            'StateChangeConditions', {'Port1In', 'AnswerLick', 'GlobalTimer1_End', noLickOutcome},...
+            'OutputActions', {});     
+        sma = AddState(sma, 'Name', 'AnswerLick', ... 
+            'Timer', 0,...
+            'StateChangeConditions', {'GlobalTimer1_End', lickOutcome},...
+            'OutputActions', {});             
+        sma = AddState(sma, 'Name', 'NoLickOutcome',... % dummy state for alignment
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', noLickOutcome});
+        sma = AddState(sma, 'Name', 'LickOutcome',... % dummy state for alignment
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', lickOutcome});        
+        sma = AddState(sma,'Name', 'Reward', ...
+            'Timer', S.RewardValveTime,... %
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', UsAction);
+            'OutputActions', {'ValveState', S.RewardValveCode, 'SoftCode', 1});
+        sma = AddState(sma,'Name', 'Punish', ...
+            'Timer', S.GUI.PunishValveTime,... %
+            'StateChangeConditions', {'Tup', 'PostUsRecording'},...
+            'OutputActions', {'ValveState', S.PunishValveCode, 'SoftCode', 1});
+        sma = AddState(sma,'Name', 'Neutral', ...
+            'Timer', (S.RewardValveTime + S.GUI.PunishValveTime)/2,...
+            'StateChangeConditions', {'Tup', 'PostUsRecording'},...
+            'OutputActions', {'SoftCode', 1});
         sma = AddState(sma, 'Name','PostUsRecording',...
             'Timer',S.PostUsRecording,...  
             'StateChangeConditions',{'Tup','exit'},...
