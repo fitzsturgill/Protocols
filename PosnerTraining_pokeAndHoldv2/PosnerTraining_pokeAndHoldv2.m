@@ -23,11 +23,11 @@ global BpodSystem
 %% Define parameters
 S = BpodSystem.ProtocolSettings;
 if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
-    S.GUI.RewardAmount = 3; %ul
+    S.GUI.RewardAmount = 5; %ul
     S.GUI.Punish = 6; % How long the mouse must wait in the goal port for reward to be delivered
     
     S.GUI.CueLightIntensity = 2.5; %Set Cue light intensity
-    S.GUI.TargetLightIntensity =255; %Set target light intensity
+    S.GUI.TargetLightIntensity = 255; %Set target light intensity
     
     S.GUI.BaselineIntensity=2.5;
     S.GUI.foreperiod = 1;
