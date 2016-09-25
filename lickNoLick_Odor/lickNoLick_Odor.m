@@ -147,7 +147,7 @@ function lickNoLick_Odor
                 lickOutcome = 'Punish';
                 noLickOutcome = 'Neutral';
             case 4
-                OdorValve = S.GUI.Odor1Valve;
+                OdorValve = S.GUI.Odor2Valve;
                 lickOutcome = 'Reward';
                 noLickOutcome = 'Neutral';
             otherwise
