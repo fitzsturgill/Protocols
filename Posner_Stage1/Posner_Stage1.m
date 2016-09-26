@@ -51,7 +51,6 @@ outcomeFig = ensureFigure('Outcome_plot', 1);
 outcomeAxis = subplot(2,1,1);
 outcomeSpan = 20;
 ITIsAxis = subplot(2,1,2);
-xlabel('trial #'); ylabel('ITI');
 
 
 
@@ -129,9 +128,10 @@ for currentTrial = 1:MaxTrials
         % update outcome plot 
         plot(outcomeAxis, Outcomes, 'o');
         set(outcomeAxis, 'XLim', [max(0, currentTrial - outcomeSpan) min(MaxTrials, currentTrial)]);
+        xlabel('trial #'); ylabel('Outcome');
         
         % update ITIs plot
-        plot(ITIsAxis, ITIs, 'o');
+        plot(ITIsAxis, ITIs, 'o'); xlabel('trial #'); ylabel('ITI');
 
         
         

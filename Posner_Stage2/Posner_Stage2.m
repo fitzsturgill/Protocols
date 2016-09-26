@@ -1,4 +1,8 @@
 function Posner_Stage2
+    %note during training, there is no distinction between invalid/valid trials
+    %because the "cue light" is a pre-emptive, bidirectional flash (i.e. dim
+    %flash appears on both the right and left side prior to the appearance of
+    %the target light)
 
     global BpodSystem
     
@@ -31,30 +35,32 @@ function Posner_Stage2
     % Initialize parameter GUI plugin
     BpodParameterGUI('init', S);
 
-    %% Define trials:
-    %note during training, there is no distinction between invalid/valid trials
-    %because the "cue light" is a pre-emptive, bidirectional flash (i.e. dim
-    %flash appears on both the right and left side prior to the appearance of
-    %the target light)
-
-    MaxTrials = 1000;
-
+    %% initialize trial types and outcomes
     
-    %% generate randomized trial types
-    TrialTypes = randi(2, 1, 1000); % 
+    MaxTrials = 1000;    
+    % generate randomized trial types
+    TrialTypes = randi(2, 1, 1000); 
+    Outcomes = NaN(1, MaxTrials); % NaN: future trial, -1: early withdrawal, 1: correct withdrawal
+    ITIs = []; % time in between trials
+    
     BpodSystem.Data.TrialTypes= []; % The type of each trial completed will be deposited here
+    BpodSystem.Data.TrialOutcomes = []; % ditto for outcomes
+    BpodSystem.Data.ITIs = [];
+    
 
     %% Initialize plots
+    trialsToShow = 50;
     BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
-    BpodSystem.GUIHandles.OutcomePlot = axes('Position', [.075 .3 .89 .6]);
-    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'init',TrialTypes);
+    BpodSystem.GUIHandles.OutcomePlot = subplot(2,1,1);
+    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'init',TrialTypes, 'ntrials', trialsToShow);
+    BpodSystem.GUIHandles.ITIPlot = subplot(2,2,2);    
     BpodNotebook('init');
 
 
 
     %% This code initializes the Total Reward Display plugin, 
     TotalRewardDisplay('init');
-    RewardAmount = S.GUI.RewardAmount;
+
 
     %%Generate white noise
     SF = 192000; % Sound card sampling rate
@@ -67,9 +73,9 @@ function Posner_Stage2
     %% Main trial loop
     for currentTrial = 1:MaxTrials
         %% Foreperiod, sync GUI to reflect updated values (see adjustment at end of each trial)
-        S.GUI.foreperiod = S.foreperiod;    
-        S.GUI.CueDelay = S.CueDelay;
-        S.GUI.LightOn = S.LightOn;
+%         S.GUI.foreperiod = S.foreperiod;    
+%         S.GUI.CueDelay = S.CueDelay;
+%         S.GUI.LightOn = S.LightOn;
         S = BpodParameterGUI('sync', S); % BpodParemeterGUI can sync in either direction (apparently from the documentation)
 
         R = GetValveTimes(S.GUI.RewardAmount, [1 3]); LeftValveTime = R(1); RightValveTime = R(2); % Update reward amounts
@@ -213,12 +219,35 @@ function Posner_Stage2
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
             BpodSystem.Data = BpodNotebook('sync', BpodSystem.Data); % Sync with Bpod notebook plugin
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
-            BpodSystem.Data.TrialTypes(currentTrial) = TrialTypes(currentTrial); % Adds the trial type of the current trial to data        
-            UpdateSideOutcomePlot(TrialTypes, BpodSystem.Data);
+            BpodSystem.Data.TrialTypes(currentTrial) = TrialTypes(currentTrial); % Adds the trial type of the current trial to data
+            % determine outcome
+            if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.Reward(1))
+                Outcomes(currentTrial) = 1; % correct withdrawal
+            else
+                Outcomes(currentTrial) = -1; % early withdrawal
+            end
+            % calculate total ITI
+            if currentTrial == 1
+                ITIs(1) = NaN;                
+            else
+                ITIs(currentTrial) = BpodSystem.Data.TrialStartTimestamp(currentTrial) - BpodSystem.Data.TrialStartTimestamp(currentTrial - 1);
+            end
+            BpodSystem.Data.TrialOutcomes(currentTrial) = Outcomes(currentTrial);
+            BpodSystem.Data.ITIs(currentTrial) = ITIs(currentTrial);
+
+            % update plots
+            TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
+                currentTrial, TrialTypes, Outcomes);
+            % update ITIs plot
+            plot(ITIsAxis, ITIs, 'o'); xlabel('trial #'); ylabel('ITI');            
             UpdateTotalRewardDisplay(S.GUI.RewardAmount, currentTrial); % and updates it on each trial. 
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+            
+            % still need code to update waiting times, right now this is
+            % done manually
         end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
             return
         end
+    end

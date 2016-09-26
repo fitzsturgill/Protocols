@@ -248,6 +248,7 @@ for currentTrial = 1:MaxTrials
             DrinkingState(x) = 0;
         end
     end
+    
     %%
     if numel(DrinkingState) == 1 % initialize on trial # 1
         cR = 0; % cR = number of consecutive responses correct (i.e. no early withdrawals)
