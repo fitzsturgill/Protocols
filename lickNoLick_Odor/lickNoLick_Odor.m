@@ -125,12 +125,6 @@ function lickNoLick_Odor
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         TrialType = TrialTypes(currentTrial);
         
-        % choose odor
-        if ismember(TrialType, [1 3])
-            OdorValve = S.GUI.Odor1Valve;
-        else
-            OdorValve = S.GUI.Odor1Valve;
-        end
         
         %% determine odor cues and outcomes for current trial
         switch TrialType
@@ -197,7 +191,7 @@ function lickNoLick_Odor
             'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});
         sma = AddState(sma, 'Name', 'AnswerDelay', ... 
             'Timer', S.GUI.AnswerDelay,...
-            'StateChangeConditions', {'Tup', 'Answer1'},...
+            'StateChangeConditions', {'Tup', 'AnswerStart'},...
             'OutputActions', {});
         sma = AddState(sma, 'Name', 'AnswerStart', ... 
             'Timer', 0,...
