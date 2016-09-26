@@ -217,7 +217,7 @@ for currentTrial = 1:MaxTrials
         'Timer', S.GUI.RealITI,...
         'StateChangeConditions', {'Tup', 'exit'},...
         'OutputActions',  {'PWM2', 255});
-   
+    
     SendStateMatrix(sma);
     RawEvents = RunStateMatrix; % RawEvents = the data from the trial
 

@@ -4,153 +4,221 @@ function Posner_Stage2
     
     S = BpodSystem.ProtocolSettings;
     
-if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
-    S.GUI.RewardAmount = 5; %ul
-    S.GUI.Punish = 6; % How long the mouse must wait in the goal port for reward to be delivered
-    
-    S.GUI.CueLightIntensity = 2.5; %Set Cue light intensity
-    S.GUI.TargetLightIntensity = 255; %Set target light intensity
-    
-    S.GUI.BaselineIntensity=2.5;
-    S.GUI.Foreperiod = 1;
-    S.GUI.Trace = 1; % How long the mouse must poke in the center to activate the goal port
-    S.GUI.Cue=1;
-    
-    S.GUI.RealITI = 2;
-    S.GUI.windowIncrement = 3;
-    
-  
+    if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
+        S.GUI.RewardAmount = 5; %ul
+        S.GUI.Punish = 6; % How long the mouse must wait in the goal port for reward to be delivered
 
-%     S.DrinkingGrace = 0.25; 
-    S.TargetLightOn = 100;
-    S.maxForeperiod = 100;
-    S.maxTrace = 100;
-    S.maxCue = 100;
-    S.CenterPokeTime = 0.05; % WHAT VALUE TO USE HERE????????????
-%     S.foreperiod = S.GUI.foreperiod;    
-%     S.CueDelay = S.GUI.CueDelay;
-%     S.LightOn = S.GUI.LightOn;    
-end    
+        S.GUI.BaselineIntensity = 2.5;    
+        S.GUI.CueLightIntensity = 2.5; % value added to baseline intensity to determine cue light intensity
+        S.GUI.TargetLightIntensity = 255; %Set target light intensity
 
-% Initialize parameter GUI plugin
-BpodParameterGUI('init', S);
+        S.GUI.Foreperiod = 0.02;
+        S.GUI.Trace = 0.02; % How long the mouse must poke in the center to activate the goal port
+        S.GUI.Cue = 0.02;
+        S.GUI.Graceperiod = 0.05;
 
-%% Define trials-Trial types tranformed via iterative process  
-%note during training, there is no distinction between invalid/valid trials
-%because the "cue light" is a pre-emptive, bidirectional flash (i.e. dim
-%flash appears on both the right and left side prior to the appearance of
-%the target light)
+        S.GUI.ITI = 2;
+        S.GUI.windowIncrement = 3;
 
-MaxTrials = 1000;
+        S.DrinkingGrace = 0.25; 
+        S.TargetLightOn = 100;
+        S.maxForeperiod = 100;
+        S.maxTrace = 100;
+        S.maxCue = 100;
+        S.CenterPokeTime = 0.05; % WHAT VALUE TO USE HERE????????????
+    end    
 
-%% generate randomized trial types
-ra = rand(1,MaxTrials);
-TrialTypes(ra < 0.5) = 1; %  50% of trials are type 1
-TrialTypes(ra >= 0.5) = 2; % 50% of trials are type 2
+    % Initialize parameter GUI plugin
+    BpodParameterGUI('init', S);
+
+    %% Define trials:
+    %note during training, there is no distinction between invalid/valid trials
+    %because the "cue light" is a pre-emptive, bidirectional flash (i.e. dim
+    %flash appears on both the right and left side prior to the appearance of
+    %the target light)
+
+    MaxTrials = 1000;
 
     
-BpodSystem.Data.TrialTypes= []; % The trial type of each trial completed will be added here
+    %% generate randomized trial types
+    TrialTypes = randi(2, 1, 1000); % 
+    BpodSystem.Data.TrialTypes= []; % The type of each trial completed will be deposited here
+
+    %% Initialize plots
+    BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
+    BpodSystem.GUIHandles.OutcomePlot = axes('Position', [.075 .3 .89 .6]);
+    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'init',TrialTypes);
+    BpodNotebook('init');
 
 
-%% Initialize plots
-BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
-BpodSystem.GUIHandles.OutcomePlot = axes('Position', [.075 .3 .89 .6]);
-TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'init',TrialTypes);
-BpodNotebook('init');
 
+    %% This code initializes the Total Reward Display plugin, 
+    TotalRewardDisplay('init');
+    RewardAmount = S.GUI.RewardAmount;
 
+    %%Generate white noise
+    SF = 192000; % Sound card sampling rate
+    PunishSound = (rand(1,SF*.5)*2) - 1;
+    PsychToolboxSoundServer('init')
+    PsychToolboxSoundServer('Load', 1, PunishSound);
+    % Set soft code handler to trigger sounds
+    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
 
-%% This code initializes the Total Reward Display plugin, 
-TotalRewardDisplay('init');
-RewardAmount = S.GUI.RewardAmount;
+    %% Main trial loop
+    for currentTrial = 1:MaxTrials
+        %% Foreperiod, sync GUI to reflect updated values (see adjustment at end of each trial)
+        S.GUI.foreperiod = S.foreperiod;    
+        S.GUI.CueDelay = S.CueDelay;
+        S.GUI.LightOn = S.LightOn;
+        S = BpodParameterGUI('sync', S); % BpodParemeterGUI can sync in either direction (apparently from the documentation)
 
-%%Generate white noise
-SF = 192000; % Sound card sampling rate
-PunishSound = (rand(1,SF*.5)*2) - 1;
-PsychToolboxSoundServer('init')
-PsychToolboxSoundServer('Load', 1, PunishSound);
-% Set soft code handler to trigger sounds
-BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
-%% Main trial loop
-for currentTrial = 1:MaxTrials
-    %% Foreperiod, sync GUI to reflect updated values (see adjustment at end of each trial)
-    S.GUI.foreperiod = S.foreperiod;    
-    S.GUI.CueDelay = S.CueDelay;
-    S.GUI.LightOn = S.LightOn;
-    S = BpodParameterGUI('sync', S); % BpodParemeterGUI can sync in either direction (apparently from the documentation)
-    
-    R = GetValveTimes(S.GUI.RewardAmount, [1 3]); LeftValveTime = R(1); RightValveTime = R(2); % Update reward amounts
-    
-    %% Suelynn: generate exponentially distributed reward delay but bounded by min and max specified values    
-    RewardDelayMin = 0;
-    RewardDelayMean = 0.015; 
-    RewardDelayMax = 0.1;
-    S.RewardDelay = -1;
-    while 1
-        if RewardDelayMin <= S.RewardDelay <= RewardDelayMax;
-            break
-        else
-            S.RewardDelay = exprnd(RewardDelayMean);
+        R = GetValveTimes(S.GUI.RewardAmount, [1 3]); LeftValveTime = R(1); RightValveTime = R(2); % Update reward amounts
+
+    %     %% Suelynn: generate exponentially distributed reward delay but bounded by min and max specified values    
+    %     RewardDelayMin = 0;
+    %     RewardDelayMean = 0.015; 
+    %     RewardDelayMax = 0.1;
+    %     S.RewardDelay = -1;
+    %     while 1
+    %         if RewardDelayMin <= S.RewardDelay <= RewardDelayMax;
+    %             break
+    %         else
+    %             S.RewardDelay = exprnd(RewardDelayMean);
+    %         end
+    %     end
+
+        %% 
+
+        switch TrialTypes(currentTrial) % Determine trial-specific state matrix fields
+            case 1 %cuetarget match left
+                TargetLight = {'PWM3', S.GUI.BaselineIntensity,'PWM1', min(S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity, 255)}; 
+                RewardTime = LeftValveTime;
+                RewardAction = {'ValveState', 1};
+
+            case 2 %cuetarget match right
+                TargetLight = {'PWM1', S.GUI.BaselineIntensity,'PWM3', min(S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity, 255)}; 
+                RewardTime = RightValveTime;
+                RewardAction = {'ValveState', 4};
         end
-    end
+        CueLight = {'PWM1', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255), 'PWM3', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255)};    
+        BaselineLight={'PWM1', S.GUI.BaselineIntensity, 'PWM3', S.GUI.BaselineIntensity};
 
-    %% 
-    
-    switch TrialTypes(currentTrial) % Determine trial-specific state matrix fields
-        case 1 %cuetarget match left
-            CueLight = {'PWM3', S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 'PWM1', S.GUI.BaselineIntensity+S.GUI.CueLightIntensity};
-            TargetLight = {'PWM3', S.GUI.BaselineIntensity,'PWM1', S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity}; 
-            RewardState = 'LeftReward';
-            DrinkingReward = 'Port1Out'; 
-        case 2 %cuetarget match right
-            CueLight = {'PWM1', S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 'PWM3', S.GUI.BaselineIntensity+S.GUI.CueLightIntensity}; 
-            TargetLight = {'PWM1', S.GUI.BaselineIntensity,'PWM3', S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity}; 
-            RewardState= 'RightReward';
-            DrinkingReward = 'Port3Out';
-    end
-   
-    BaselineLight={'PWM1', S.GUI.BaselineIntensity, 'PWM3', S.GUI.BaselineIntensity};
-    
-    
-    sma = NewStateMatrix(); % Assemble state matrix
-    sma = SetGlobalTimer(sma,1,S.GUI.Foreperiod); % pre cue  
-    sma = SetGlobalTimer(sma,2,S.GUI.Foreperiod); % pre cue  
-    
-    sma = AddState(sma, 'Name', 'WaitForPoke', ... %Wait for initiation
-        'Timer', 0,...
-        'StateChangeConditions', {'Port2In', 'CenterPokeDetected'},...
-        'OutputActions', BaselineLight); 
-    sma = AddState(sma, 'Name', 'CenterPokeDetected', ... %purposeful center poke
-        'Timer', S.CenterPokeTime,...
-        'StateChangeConditions', {'Tup', 'WaitForCue', 'Port2Out', 'WaitForPoke'},...
-        'OutputActions', BaselineLight);
 
-    %% variable foreperiod betwen center poke and cue light
+        sma = NewStateMatrix(); % Assemble state matrix
+        sma = SetGlobalTimer(sma,1,S.GUI.Foreperiod); % pre cue  
+        sma = SetGlobalTimer(sma,2,S.GUI.Cue); % pre cue  
+        sma = SetGlobalTimer(sma,3,S.GUI.Trace); % pre cue  
+        sma = SetGlobalTimer(sma,4,S.GUI.Graceperiod); % pre cue
 
-    sma = AddState(sma, 'Name', 'WaitForCue', ... %wait for the cue
-        'Timer', S.Foreperiod,...
-        'StateChangeConditions', {'Port2Out', 'GracePeriodCue', 'Tup','CueAndWait'},... %early response to cue light results in punishment 
-        'OutputActions', BaselineLight);
+        sma = AddState(sma, 'Name', 'WaitForPoke', ... %Wait for initiation
+            'Timer', 0,...
+            'StateChangeConditions', {'Port2In', 'CenterPokeDetected'},...
+            'OutputActions', BaselineLight); 
+        sma = AddState(sma, 'Name', 'CenterPokeDetected', ... %purposeful center poke
+            'Timer', S.CenterPokeTime,...
+            'StateChangeConditions', {'Tup', 'WaitForCue', 'Port2Out', 'WaitForPoke'},...
+            'OutputActions', BaselineLight);
 
-    sma = AddState(sma, 'Name', 'GracePeriodCue', ... %wait for the cue
-        'Timer', S.GUI.GracePeriod,...
-        'StateChangeConditions', {'Port2In', 'WaitForCue', 'Tup','PunishWithdrawal'},... %early response to cue light results in punishment 
-        'OutputActions', BaselineLight);
-    sma = AddState(sma, 'Name', 'trigForeperiod', ...
-        'Timer', 0,...
-        'StateChangeConditions', {'Tup', 'Foreperiod1'},...
-        'OutputActions', {'GlobalTimerTrig', 1});
-    sma = AddState(sma, 'Name', 'Foreperiod1',...
-        'Timer', 0,...
-        'StateChangeCondtions', {'GlobalTimer1_end', 'trigCue', 'Port2Out', 'Foreperiod2'},...
-        'OutputActions', BaselineLight);
-    % TRIG GLOBAL TIMER
-    sma = AddState(sma, 'Name', 'Foreperiod2',...
-        'Timer', 0,...
-        'StateChangeConditions', {'GlobalTimer1_end', 'trigCue', 'GlobalTimer4_end', 'Punish', 'Port2In', 'Foreperiod3'},...
-        'OutputActions', [{'GlobalTimerTrig', 4}, BaselineLight]);
-    sma = AddState(sma, 'Name', 'Foreperiod3',...
-        'Timer', 0,...
-        'StateChangeConditions', {'GlobalTimer1_end', 'trigCue', 'GlobalTimer4_end', 'Punish', '
-        'OutputActions', [{'GlobalTimerTrig', 4}, BaselineLight]);
-    
+        % add variable foreperiod betwen center poke and cue light in future????
+
+        %% foreperiod block: each block implements a grace period for center poke and hold
+        % trigger global timer defining foreperiod
+        sma = AddState(sma, 'Name', 'trigForeperiod', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Foreperiod1'},...
+            'OutputActions', {'GlobalTimerTrig', 1});
+        % Foreperiod1: if poke out occurs trigger grace period, if poke in
+        % occurs, skip to foreperiod2 to cancel grace period
+        sma = AddState(sma, 'Name', 'Foreperiod1',...
+            'Timer', 0,...
+            'StateChangeCondtions', {'GlobalTimer1_end', 'trigCue', 'GlobalTimer4_end', 'Punish', 'Port2In', 'Foreperiod2', 'Port2Out', 'trigGrace_FP'},...
+            'OutputActions', BaselineLight);
+        sma = AddState(sma, 'Name', 'trigGrace_FP',...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Foreperiod1'},...
+            'OutputActions', {'GlobalTimerTrig', 4});
+        % Foreperiod2 is for when animal pokes back in, grace period timer is ignored here 
+        sma = AddState(sma, 'Name', 'Foreperiod2',...
+            'Timer', 0,...
+            'StateChangeConditions', {'GlobalTimer1_end', 'trigCue', 'Port2Out', 'trigGrace_FP'},...
+            'OutputActions', BaselineLight);
+
+        %% cue block
+        % trigger global timer defining cue
+        sma = AddState(sma, 'Name', 'trigCue', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Cue1'},...
+            'OutputActions', {'GlobalTimerTrig', 2});
+        % cue1: poke outs trigger grace period, poke ins skip to cue2 to cancel grace period
+        sma = AddState(sma, 'Name', 'Cue1',...
+            'Timer', 0,...
+            'StateChangeCondtions', {'GlobalTimer2_end', 'trigTrace', 'GlobalTimer4_end', 'Punish', 'Port2In', 'Cue2', 'Port2Out', 'trigGrace_Cue'},...
+            'OutputActions', CueLight);
+        sma = AddState(sma, 'Name', 'trigGrace_Cue',...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Cue1'},...
+            'OutputActions', {'GlobalTimerTrig', 4});
+        % cue2 is for when animal pokes back in, grace period timer is ignored here 
+        sma = AddState(sma, 'Name', 'Cue2',...
+            'Timer', 0,...
+            'StateChangeConditions', {'GlobalTimer2_end', 'trigTrace', 'Port2Out', 'trigGrace_Cue'},...
+            'OutputActions', CueLight);
+        %% trace block
+        % trigger global timer defining trace
+        sma = AddState(sma, 'Name', 'trigTrace', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Trace1'},...
+            'OutputActions', {'GlobalTimerTrig', 3});
+        % Trace1: poke outs trigger grace period, poke ins skip to Trace2 to cancel grace period
+        sma = AddState(sma, 'Name', 'Trace1',...
+            'Timer', 0,...
+            'StateChangeCondtions', {'GlobalTimer3_end', 'Reward', 'GlobalTimer4_end', 'Punish', 'Port2In', 'Trace2', 'Port2Out', 'trigGrace_Trace'},...
+            'OutputActions', BaselineLight);
+        sma = AddState(sma, 'Name', 'trigGrace_Trace',...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Trace1'},...
+            'OutputActions', {'GlobalTimerTrig', 4});
+        % Trace2 is for when animal pokes back in, grace period timer is ignored here 
+        sma = AddState(sma, 'Name', 'Trace2',...
+            'Timer', 0,...
+            'StateChangeConditions', {'GlobalTimer3_end', 'Reward', 'Port2Out', 'trigGrace_Trace'},...
+            'OutputActions', BaselineLight);
+        %% reward delivered noncontingently, target light remains on until reward is collected
+        sma = AddState(sma, 'Name', 'Reward', ...
+            'Timer', RewardTime,...
+            'StateChangeConditions', {'Tup', 'Drinking'},...
+            'OutputActions', [TargetLight RewardAction]);    
+        sma = AddState(sma, 'Name', 'Drinking', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Port1Out', 'DrinkingGrace', 'Port3Out', 'DrinkingGrace'},...
+            'OutputActions', TargetLight);
+        sma = AddState(sma, 'Name', 'DrinkingGrace',...
+            'Timer', S.DrinkingGrace,...
+            'StateChangeConditions', {'Port1In', 'Drinking', 'Port3In', 'Drinking', 'Tup', 'exit'},...
+            'OutputActions', TargetLight);
+        sma = AddState(sma, 'Name', 'Punish', ...
+            'Timer', S.GUI.Punish,...
+            'StateChangeConditions', {'Tup', 'ITI'},...
+            'OutputActions', [{'SoftCode', 1}, {'PWM2', 255}, BaselineLight]);
+        sma = AddState(sma, 'Name', 'ITI', ...
+            'Timer', S.GUI.ITI,...
+            'StateChangeConditions', {'Tup', 'exit'},...
+            'OutputActions', [{'PWM2', 255}, BaselineLight]);
+
+        SendStateMatrix(sma);
+        RawEvents = RunStateMatrix; % RawEvents = the data from the trial
+        
+        
+        if ~isempty(fieldnames(RawEvents)) % If trial data was returned
+            BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
+            BpodSystem.Data = BpodNotebook('sync', BpodSystem.Data); % Sync with Bpod notebook plugin
+            BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
+            BpodSystem.Data.TrialTypes(currentTrial) = TrialTypes(currentTrial); % Adds the trial type of the current trial to data        
+            UpdateSideOutcomePlot(TrialTypes, BpodSystem.Data);
+            UpdateTotalRewardDisplay(S.GUI.RewardAmount, currentTrial); % and updates it on each trial. 
+            SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+        end
+        HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+        if BpodSystem.BeingUsed == 0
+            return
+        end
