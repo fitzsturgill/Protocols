@@ -27,7 +27,7 @@ if isempty(fieldnames(S))  % If settings file was an empty struct, populate stru
     S.GUI.SessionStartDelay =1;
     S.GUI.WaitForPoke1 = 2;
     S.GUI.ITI = 2; % timeout with house light after water rewards
-    S.GUI.eitherSide = 1; % allow mouse to be rewarded for right and left pokes rather than randomly for either right or left poke (requires exploration if set to 0)
+    S.GUI.eitherSide = 0; % allow mouse to be rewarded for right and left pokes rather than randomly for either right or left poke (requires exploration if set to 0)
 end
 
 % Initialize parameter GUI plugin
