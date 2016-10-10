@@ -56,6 +56,7 @@ xlabel('trial #'); ylabel('ITI'); hold on;
 
 
 
+
 %% This code initializes the Total Reward Display plugin, and updates it on each trial. 
 TotalRewardDisplay('init');
 
@@ -137,7 +138,7 @@ for currentTrial = 1:MaxTrials
         xlabel(outcomeAxis, 'trial #'); ylabel(outcomeAxis, 'Outcome');
         
         % update ITIs plot
-        plot(ITIsAxis, ITIs, 'o'); 
+        plot(ITIsAxis, ITIs, 'o'); set(ITIsAxis, 'YScale', 'log');
 
         
         
