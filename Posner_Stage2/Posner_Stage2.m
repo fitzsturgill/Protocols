@@ -16,10 +16,10 @@ function Posner_Stage2
         S.GUI.CueLightIntensity = 2.5; % value added to baseline intensity to determine cue light intensity
         S.GUI.TargetLightIntensity = 255; %Set target light intensity
 
-        S.GUI.Foreperiod = 0.4; %0.02
-        S.GUI.Trace = 0.4; % 0.02 How long the mouse must poke in the center to activate the goal port
-        S.GUI.Cue = 0.4; % 0.02
-        S.GUI.Graceperiod = 0.3; %0.05
+        S.GUI.Foreperiod = 0.02; %0.02
+        S.GUI.Trace = 0.02; % 0.02 How long the mouse must poke in the center to activate the goal port
+        S.GUI.Cue = 0.02; % 0.02
+        S.GUI.Graceperiod = 0.05; %0.05
 
         S.GUI.ITI = 2;
         S.GUI.windowIncrement = 3;
@@ -64,7 +64,7 @@ function Posner_Stage2
 
     %%Generate white noise
     SF = 192000; % Sound card sampling rate
-    PunishSound = (rand(1,SF*.5)*2) - 1;
+    PunishSound = (rand(1,SF*.5)*2) - 1; %  2s punish sound
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, PunishSound);
     % Set soft code handler to trigger sounds
@@ -280,8 +280,8 @@ function Posner_Stage2
 %     %     end
 %         disp(['*** Trial ' num2str(x) ' cuedelay is ' num2str(S.CueDelay)]);            
 %     %%
-%         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
-%         if BpodSystem.BeingUsed == 0
-%             return
-%         end
+        HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+        if BpodSystem.BeingUsed == 0
+            return
+        end
     end
