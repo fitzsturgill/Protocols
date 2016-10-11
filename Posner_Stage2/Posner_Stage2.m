@@ -246,8 +246,42 @@ function Posner_Stage2
             % still need code to update waiting times, right now this is
             % done manually
         end
-        HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
-        if BpodSystem.BeingUsed == 0
-            return
-        end
+        
+%         %% Code to increase waiting times in center port: Every x trials mouse gets correct, 
+%         %the foreperiods increase by 1 ms. Incorrect trials result in a 0.5 ms decrease. 
+% 
+%         for x = 1:BpodSystem.Data.nTrials
+%             if ~isnan(BpodSystem.Data.RawEvents.Trial{x}.States.Drinking(1))
+%                 DrinkingState(x) = 1;
+%             else
+%                 DrinkingState(x) = 0;
+%             end
+%         end
+% 
+%         %%
+%         if numel(DrinkingState) == 1 % initialize on trial # 1
+%             cR = 0; % cR = number of consecutive responses correct (i.e. no early withdrawals)
+%         end
+%         windowIncrement = S.GUI.windowIncrement;
+%         if DrinkingState(end) == 1
+%             cR = cR + 1;
+%         else DrinkingState(end)
+%             cR = 0;
+%             S.foreperiod = min(S.foreperiod - 0.0005, S.maxForeperiod);
+%             S.CueDelay = min(S.CueDelay - 0.0005, S.maxCueDelay);
+%             S.LightOn = min(S.LightOn - 0.0005, S.maxLightOn);
+%         end
+%         if cR == windowIncrement
+%             cR = 0;
+%             S.foreperiod = min(S.foreperiod + 0.001, S.maxForeperiod);
+%             S.CueDelay = min(S.CueDelay + 0.001, S.maxCueDelay);
+%             S.LightOn = min(S.LightOn + 0.001, S.maxLightOn);
+%         end
+%     %     end
+%         disp(['*** Trial ' num2str(x) ' cuedelay is ' num2str(S.CueDelay)]);            
+%     %%
+%         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+%         if BpodSystem.BeingUsed == 0
+%             return
+%         end
     end
