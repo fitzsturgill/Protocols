@@ -16,10 +16,10 @@ function Posner_Stage2
         S.GUI.CueLightIntensity = 2.5; % value added to baseline intensity to determine cue light intensity
         S.GUI.TargetLightIntensity = 255; %Set target light intensity
 
-        S.GUI.Foreperiod = 0.02;
-        S.GUI.Trace = 0.02; % How long the mouse must poke in the center to activate the goal port
-        S.GUI.Cue = 0.02;
-        S.GUI.Graceperiod = 0.05;
+        S.GUI.Foreperiod = 0.4; %0.02
+        S.GUI.Trace = 0.4; % 0.02 How long the mouse must poke in the center to activate the goal port
+        S.GUI.Cue = 0.4; % 0.02
+        S.GUI.Graceperiod = 0.3; %0.05
 
         S.GUI.ITI = 2;
         S.GUI.windowIncrement = 3;
