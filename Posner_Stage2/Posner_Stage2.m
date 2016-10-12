@@ -22,13 +22,21 @@ function Posner_Stage2
         S.GUI.Graceperiod = 0.05; %0.05
 
         S.GUI.ITI = 2;
-        S.GUI.windowIncrement = 3;
-
-        S.DrinkingGrace = 0.25; 
-        S.TargetLightOn = 100;
-        S.maxForeperiod = 100;
-        S.maxTrace = 100;
-        S.maxCue = 100;
+        
+        S.GUI.delayAdjust_trialWindow = 10;
+        S.GUI.delayAdjust_stepUpFraction = 0.8; % if P% of trials are correct over T trials, then increase the delay periods by delayAdjust_Increment
+        S.GUI.delayAdjust_stepDownFraction = 0.8; % if P% of trials are incorrect over T trials, then decrease the delays
+        S.GUI.delayAdjust_increment = 0.01;
+        
+        S.DrinkingGrace = 0.2;
+        
+        S.maxForeperiod = 0.45;
+        S.maxTrace = 0.45;
+        S.maxCue = 0.100;  % this should match the target light on time in the final task
+        S.minForeperiod = 0.02;
+        S.minTrace = 0.02;
+        S.minCue = 0.02;  % 
+        
         S.CenterPokeTime = 0.05; % WHAT VALUE TO USE HERE????????????
     end    
 
@@ -72,10 +80,7 @@ function Posner_Stage2
 
     %% Main trial loop
     for currentTrial = 1:MaxTrials
-        %% Foreperiod, sync GUI to reflect updated values (see adjustment at end of each trial)
-%         S.GUI.foreperiod = S.foreperiod;    
-%         S.GUI.CueDelay = S.CueDelay;
-%         S.GUI.LightOn = S.LightOn;
+        %% sync GUI to reflect updated values (see adjustment at end of each trial)
         S = BpodParameterGUI('sync', S); % BpodParemeterGUI can sync in either direction (apparently from the documentation)
 
         R = GetValveTimes(S.GUI.RewardAmount, [1 3]); LeftValveTime = R(1); RightValveTime = R(2); % Update reward amounts
@@ -243,43 +248,30 @@ function Posner_Stage2
             TotalRewardDisplay('add', S.GUI.RewardAmount); % and updates it on each trial. 
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
             
-            % still need code to update waiting times, right now this is
-            % done manually
-        end
+
         
-%         %% Code to increase waiting times in center port: Every x trials mouse gets correct, 
-%         %the foreperiods increase by 1 ms. Incorrect trials result in a 0.5 ms decrease. 
-% 
-%         for x = 1:BpodSystem.Data.nTrials
-%             if ~isnan(BpodSystem.Data.RawEvents.Trial{x}.States.Drinking(1))
-%                 DrinkingState(x) = 1;
-%             else
-%                 DrinkingState(x) = 0;
-%             end
-%         end
-% 
-%         %%
-%         if numel(DrinkingState) == 1 % initialize on trial # 1
-%             cR = 0; % cR = number of consecutive responses correct (i.e. no early withdrawals)
-%         end
-%         windowIncrement = S.GUI.windowIncrement;
-%         if DrinkingState(end) == 1
-%             cR = cR + 1;
-%         else DrinkingState(end)
-%             cR = 0;
-%             S.foreperiod = min(S.foreperiod - 0.0005, S.maxForeperiod);
-%             S.CueDelay = min(S.CueDelay - 0.0005, S.maxCueDelay);
-%             S.LightOn = min(S.LightOn - 0.0005, S.maxLightOn);
-%         end
-%         if cR == windowIncrement
-%             cR = 0;
-%             S.foreperiod = min(S.foreperiod + 0.001, S.maxForeperiod);
-%             S.CueDelay = min(S.CueDelay + 0.001, S.maxCueDelay);
-%             S.LightOn = min(S.LightOn + 0.001, S.maxLightOn);
-%         end
-%     %     end
-%         disp(['*** Trial ' num2str(x) ' cuedelay is ' num2str(S.CueDelay)]);            
-%     %%
+            %% Code to increase waiting times in center port:
+            if ~rem(currentTrial, S.GUI.delayAdjust_trialWindow)
+                % if at least stepUpFraction trials are correct, increase
+                % waiting times
+                if sum(Outcomes(max(1, currentTrial - S.GUI.delayAdjust_trialWindow + 1):currentTrial) == 1)...
+                        /S.GUI.delayAdjust_trialWindow >= S.GUI.delayAdjust_stepUpFraction
+                    S.GUI.Foreperiod = min(S.GUI.Foreperiod + S.GUI.delayAdjust_increment, S.maxForeperiod);
+                    S.GUI.Trace = min(S.GUI.Trace + S.GUI.delayAdjust_increment, S.maxTrace);
+                    S.GUI.Cue = min(S.GUI.Cue + S.GUI.delayAdjust_increment, S.maxCue);
+                % or else, if at least stepUpFraction trials are incorrect, decrease
+                % waiting times                    
+                elseif sum(Outcomes(max(1, currentTrial - S.GUI.delayAdjust_trialWindow + 1):currentTrial) == -1)...
+                        /S.GUI.delayAdjust_trialWindow >= S.GUI.delayAdjust_stepDownFraction
+                    S.GUI.Foreperiod = max(S.GUI.Foreperiod - S.GUI.delayAdjust_increment, S.minForeperiod);
+                    S.GUI.Trace = max(S.GUI.Trace - S.GUI.delayAdjust_increment, S.minTrace);
+                    S.GUI.Cue = max(S.GUI.Cue - S.GUI.delayAdjust_increment, S.minCue);                
+                end
+                sprintf('*** Trial %i, foreperiod = %.3f, cue = %.3f, trace = %.3f ***',...
+                    currentTrial, S.GUI.Foreperiod, S.GUI.Cue, S.GUI.Trace);
+            end
+    %%
+        end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
             return
