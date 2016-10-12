@@ -50,6 +50,7 @@ function Posner_Stage2
     TrialTypes = randi(2, 1, 1000); 
     Outcomes = NaN(1, MaxTrials); % NaN: future trial, -1: early withdrawal, 1: correct withdrawal
     ITIs = []; % time in between trials
+    Foreperiods = []; % to track adjustment of foreperiod delay
     
     BpodSystem.Data.TrialTypes= []; % The type of each trial completed will be deposited here
     BpodSystem.Data.TrialOutcomes = []; % ditto for outcomes
@@ -59,9 +60,10 @@ function Posner_Stage2
     %% Initialize plots
     trialsToShow = 50;
     BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none');
-    BpodSystem.GUIHandles.OutcomePlot = subplot(2,1,1);
+    BpodSystem.GUIHandles.OutcomePlot = subplot(3,1,1);
     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'init',TrialTypes, 'ntrials', trialsToShow);
-    BpodSystem.GUIHandles.ITIPlot = subplot(2,1,2);
+    BpodSystem.GUIHandles.ITIPlot = subplot(3,1,2);
+    BpodSystem.GUIHandles.ForeperiodPlot = subplot(3,1,3);
     BpodNotebook('init');
 
 
@@ -270,6 +272,10 @@ function Posner_Stage2
                 sprintf('*** Trial %i, foreperiod = %.3f, cue = %.3f, trace = %.3f ***',...
                     currentTrial, S.GUI.Foreperiod, S.GUI.Cue, S.GUI.Trace);
             end
+            % update foreperiod plot
+            Foreperiods(currentTrial) = S.GUI.Foreperiod;
+            plot(BpodSystem.GUIHandles.ForeperiodPlot, Foreperiods, 'o');
+            xlabel(BpodSystem.GUIHandles.ForeperiodPlot,'trial #'); ylabel(BpodSystem.GUIHandles.ForeperiodPlot,'Foreperiod (s)');               
     %%
         end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
