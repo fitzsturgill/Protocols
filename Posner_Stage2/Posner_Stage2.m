@@ -42,6 +42,14 @@ function Posner_Stage2
 
     % Initialize parameter GUI plugin
     BpodParameterGUI('init', S);
+    
+    %% Pause and wait for user to edit parameter GUI 
+    BpodParameterGUI('init', S);    
+    BpodSystem.Pause = 1;
+    HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+    S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+    BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
+    SaveBpodProtocolSettings;
 
     %% initialize trial types and outcomes
     
@@ -82,8 +90,6 @@ function Posner_Stage2
 
     %% Main trial loop
     for currentTrial = 1:MaxTrials
-        %% sync GUI to reflect updated values (see adjustment at end of each trial)
-        S = BpodParameterGUI('sync', S); % BpodParemeterGUI can sync in either direction (apparently from the documentation)
 
         R = GetValveTimes(S.GUI.RewardAmount, [1 3]); LeftValveTime = R(1); RightValveTime = R(2); % Update reward amounts
 
@@ -242,9 +248,9 @@ function Posner_Stage2
             BpodSystem.Data.TrialOutcomes(currentTrial) = Outcomes(currentTrial);
             BpodSystem.Data.ITIs(currentTrial) = ITIs(currentTrial);
 
-            % update plots
+            % update plots, update to reflect upcoming trial
             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
-                currentTrial, TrialTypes, Outcomes);
+                currentTrial + 1, TrialTypes, Outcomes);
             % update ITIs plot
             plot(BpodSystem.GUIHandles.ITIPlot, ITIs, 'o'); xlabel(BpodSystem.GUIHandles.ITIPlot,'trial #'); ylabel(BpodSystem.GUIHandles.ITIPlot,'ITI');            
             TotalRewardDisplay('add', S.GUI.RewardAmount); % and updates it on each trial. 
@@ -276,7 +282,9 @@ function Posner_Stage2
             Foreperiods(currentTrial) = S.GUI.Foreperiod;
             plot(BpodSystem.GUIHandles.ForeperiodPlot, Foreperiods, 'o');
             xlabel(BpodSystem.GUIHandles.ForeperiodPlot,'trial #'); ylabel(BpodSystem.GUIHandles.ForeperiodPlot,'Foreperiod (s)');               
-    %%
+            %% Save protocol settings to reflect updated delay values
+            BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
+            SaveBpodProtocolSettings;
         end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
