@@ -44,7 +44,6 @@ function Posner_Stage2
     BpodParameterGUI('init', S);
     
     %% Pause and wait for user to edit parameter GUI 
-    BpodParameterGUI('init', S);    
     BpodSystem.Pause = 1;
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
@@ -276,13 +275,14 @@ function Posner_Stage2
                     S.GUI.Cue = max(S.GUI.Cue - S.GUI.delayAdjust_increment, S.minCue);                
                 end
                 sprintf('*** Trial %i, foreperiod = %.3f, cue = %.3f, trace = %.3f ***',...
-                    currentTrial, S.GUI.Foreperiod, S.GUI.Cue, S.GUI.Trace);
+                    currentTrial, S.GUI.Foreperiod, S.GUI.Cue, S.GUI.Trace)
             end
             % update foreperiod plot
             Foreperiods(currentTrial) = S.GUI.Foreperiod;
             plot(BpodSystem.GUIHandles.ForeperiodPlot, Foreperiods, 'o');
             xlabel(BpodSystem.GUIHandles.ForeperiodPlot,'trial #'); ylabel(BpodSystem.GUIHandles.ForeperiodPlot,'Foreperiod (s)');               
             %% Save protocol settings to reflect updated delay values
+            BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
             BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
             SaveBpodProtocolSettings;
         end
