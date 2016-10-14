@@ -235,6 +235,7 @@ function Posner_Stage2
             % determine outcome
             if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.Reward(1))
                 Outcomes(currentTrial) = 1; % correct withdrawal
+                TotalRewardDisplay('add', S.GUI.RewardAmount); % and updates it on each trial. 
             else
                 Outcomes(currentTrial) = -1; % early withdrawal
             end
@@ -252,7 +253,7 @@ function Posner_Stage2
                 currentTrial + 1, TrialTypes, Outcomes);
             % update ITIs plot
             plot(BpodSystem.GUIHandles.ITIPlot, ITIs, 'o'); xlabel(BpodSystem.GUIHandles.ITIPlot,'trial #'); ylabel(BpodSystem.GUIHandles.ITIPlot,'ITI');            
-            TotalRewardDisplay('add', S.GUI.RewardAmount); % and updates it on each trial. 
+
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
             
 
