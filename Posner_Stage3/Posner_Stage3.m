@@ -1,4 +1,4 @@
-function Posner_Stage2
+function Posner_Stage3
     %note during training, there is no distinction between invalid/valid trials
     %because the "cue light" is a pre-emptive, bidirectional flash (i.e. dim
     %flash appears on both the right and left side prior to the appearance of
@@ -15,20 +15,24 @@ function Posner_Stage2
         S.GUI.BaselineIntensity = 2.5;    
         S.GUI.CueLightIntensity = 2.5; % value added to baseline intensity to determine cue light intensity
         S.GUI.TargetLightIntensity = 255; %Set target light intensity
-        S.GUI.Target = 0.1;
-        S.GUI.TargetHold = 1; % set to 1- target light stays on through reward collection, set to 0, target light only occurs for time period defined by S.GUI.Target
 
-        S.GUI.Foreperiod = 0.02; %0.02
-        S.GUI.Trace = 0.02; % 0.02 How long the mouse must poke in the center to activate the goal port
-        S.GUI.Cue = 0.02; % 0.02
-        S.GUI.Graceperiod = 0.05; %0.05
+        S.GUI.Foreperiod = 0.2; 
+        S.GUI.Trace = 0.2; 
+        S.GUI.Cue = 0.1; 
+        S.GUI.Target = 0.1;
+        S.GUI.Graceperiod = 0.05;
 
         S.GUI.ITI = 2;
-        
+        % Inf for step fractions disables adjustment of delay periods
+        % during posner task
         S.GUI.delayAdjust_trialWindow = 10;
-        S.GUI.delayAdjust_stepUpFraction = 0.8; % if P% of trials are correct over T trials, then increase the delay periods by delayAdjust_Increment
-        S.GUI.delayAdjust_stepDownFraction = 0.8; % if P% of trials are incorrect over T trials, then decrease the delays
+        S.GUI.delayAdjust_stepUpFraction = Inf; % if P% of trials are correct over T trials, then increase the delay periods by delayAdjust_Increment
+        S.GUI.delayAdjust_stepDownFraction = Inf; % if P% of trials are incorrect over T trials, then decrease the delays
         S.GUI.delayAdjust_increment = 0.01;
+        
+        S.GUI.validFraction = 0.8;
+
+        S.ResponseWindow = 4; % window in which mouse can make a response
         
         S.DrinkingGrace = 0.2;
         
@@ -56,8 +60,18 @@ function Posner_Stage2
     
     MaxTrials = 1000;    
     % generate randomized trial types
-    TrialTypes = randi(2, 1, 1000); 
-    Outcomes = NaN(1, MaxTrials); % NaN: future trial, -1: early withdrawal, 1: correct withdrawal
+    typeMatrix = [...
+        % valid cue
+        1, S.GUI.validFraction/2;... %  target left, cue left
+        2, S.GUI.validFraction/2;...  % target right, cue right
+        % invalid cue
+        3, (1 - S.GUI.validFraction)/2;...  % target left, cue right
+        4, (1 - S.GUI.validFraction)/2;...  % target right, cue left
+        ];
+    TrialTypes = defineRandomizedTrials(typeMatrix, MaxTrials);
+% NaN: future trial (blue), -1: early withdrawal (red circle), 0: incorrect choice (red dot), 1: correct
+% choice (green dot), 2: did not choose (green circle)
+    Outcomes = NaN(1, MaxTrials); 
     ITIs = []; % time in between trials
     Foreperiods = []; % to track adjustment of foreperiod delay
     
@@ -81,7 +95,7 @@ function Posner_Stage2
     TotalRewardDisplay('init');
 
 
-    %%Generate white noise
+    %% Generate white noise
     SF = 192000; % Sound card sampling rate
     PunishSound = (rand(1,SF*.5)*2) - 1; %  2s punish sound
     PsychToolboxSoundServer('init')
@@ -110,26 +124,39 @@ function Posner_Stage2
         %% 
 
         switch TrialTypes(currentTrial) % Determine trial-specific state matrix fields
-            case 1 %cuetarget match left
+            % valid cue
+            case 1 %target left, cue left
                 TargetLight = {'PWM3', S.GUI.BaselineIntensity,'PWM1', min(S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity, 255)}; 
+                CueLight = {'PWM3', S.GUI.BaselineIntensity,'PWM1', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255)}; 
+                CorrectCondition = {'Port1In', 'Reward'};
+                IncorrectCondition = {'Port3In', 'PunishResponse'}; 
                 RewardTime = LeftValveTime;
                 RewardAction = {'ValveState', 1};
-
-            case 2 %cuetarget match right
+            case 2 % target right, cue right
                 TargetLight = {'PWM1', S.GUI.BaselineIntensity,'PWM3', min(S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity, 255)}; 
+                CueLight = {'PWM1', S.GUI.BaselineIntensity,'PWM3', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255)}; 
+                CorrectCondition = {'Port3In', 'Reward'};
+                IncorrectCondition = {'Port1In', 'PunishResponse'}; 
                 RewardTime = RightValveTime;
                 RewardAction = {'ValveState', 4};
-        end
-        CueLight = {'PWM1', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255), 'PWM3', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255)};    
+            % invalid cue                
+            case 3 %target left, cue right
+                TargetLight = {'PWM3', S.GUI.BaselineIntensity,'PWM1', min(S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity, 255)}; 
+                CueLight = {'PWM1', S.GUI.BaselineIntensity,'PWM3', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255)}; 
+                CorrectCondition = {'Port1In', 'Reward'};
+                IncorrectCondition = {'Port3In', 'PunishResponse'}; 
+                RewardTime = LeftValveTime;
+                RewardAction = {'ValveState', 1};
+            case 4 % target right, cue left
+                TargetLight = {'PWM1', S.GUI.BaselineIntensity,'PWM3', min(S.GUI.BaselineIntensity+S.GUI.TargetLightIntensity, 255)}; 
+                CueLight = {'PWM3', S.GUI.BaselineIntensity,'PWM1', min(S.GUI.BaselineIntensity+S.GUI.CueLightIntensity, 255)}; 
+                CorrectCondition = {'Port3In', 'Reward'};
+                IncorrectCondition = {'Port1In', 'PunishResponse'}; 
+                RewardTime = RightValveTime;
+                RewardAction = {'ValveState', 4};                
+        end 
         BaselineLight={'PWM1', S.GUI.BaselineIntensity, 'PWM3', S.GUI.BaselineIntensity};
-        
-        % if TargetHold = 1, you still visit the target light state
-        % (usually 0.1s in duration)
-        if S.GUI.TargetHold
-            RewardLight = TargetLight;
-        else
-            RewardLight = {};
-        end
+
 
         sma = NewStateMatrix(); % Assemble state matrix
         sma = SetGlobalTimer(sma,1,S.GUI.Foreperiod); % pre cue  
@@ -210,27 +237,37 @@ function Posner_Stage2
             'Timer', 0,...
             'StateChangeConditions', {'GlobalTimer3_End', 'Target', 'Port2Out', 'trigGrace_Trace'},...
             'OutputActions', BaselineLight);
-        %% reward delivered noncontingently, if S.GUI.TargetHold = 1, then target light stays on
+        % target state assumed to be too short to enable the mouse to
+        % respond (by moving from center to left or right port
         sma = AddState(sma, 'Name', 'Target', ...
             'Timer', S.GUI.Target,...
-            'StateChangeConditions', {'Tup', 'Reward'},...
-            'OutputActions', TargetLight);            
+            'StateChangeConditions', {'Tup', 'WaitForResponse'},...
+            'OutputActions', TargetLight);    
+        sma = AddState(sma, 'Name', 'WaitForResponse', ...
+            'Timer', S.ResponseWindow, ...
+            'StateChangeConditions', [{'Tup', 'ITI'}, CorrectCondition, IncorrectCondition], ...
+            'OutputActions', BaselineLight);
         sma = AddState(sma, 'Name', 'Reward', ...
             'Timer', RewardTime,...
             'StateChangeConditions', {'Tup', 'Drinking'},...
-            'OutputActions', [RewardLight RewardAction]);    
+            'OutputActions', [TargetLight RewardAction]);    
         sma = AddState(sma, 'Name', 'Drinking', ...
             'Timer', 0,...
             'StateChangeConditions', {'Port1Out', 'DrinkingGrace', 'Port3Out', 'DrinkingGrace'},...
-            'OutputActions', RewardLight);
+            'OutputActions', TargetLight);
         sma = AddState(sma, 'Name', 'DrinkingGrace',...
             'Timer', S.DrinkingGrace,...
             'StateChangeConditions', {'Port1In', 'Drinking', 'Port3In', 'Drinking', 'Tup', 'exit'},...
-            'OutputActions', RewardLight);
+            'OutputActions', TargetLight);
         sma = AddState(sma, 'Name', 'Punish', ...
             'Timer', S.GUI.Punish,...
             'StateChangeConditions', {'Tup', 'ITI'},...
-            'OutputActions', [{'SoftCode', 1}, {'PWM2', 255}, BaselineLight]);
+            'OutputActions', [{'SoftCode', 1}, {'PWM2', 255}, BaselineLight]);        
+% Extra time out but no white noise punish sound for incorrect responses
+        sma = AddState(sma, 'Name', 'PunishResponse', ...
+            'Timer', S.GUI.Punish,...
+            'StateChangeConditions', {'Tup', 'ITI'},...
+            'OutputActions', [{'PWM2', 255}, BaselineLight]);
         sma = AddState(sma, 'Name', 'ITI', ...
             'Timer', S.GUI.ITI,...
             'StateChangeConditions', {'Tup', 'exit'},...
@@ -247,10 +284,14 @@ function Posner_Stage2
             BpodSystem.Data.TrialTypes(currentTrial) = TrialTypes(currentTrial); % Adds the trial type of the current trial to data
             % determine outcome
             if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.Reward(1))
-                Outcomes(currentTrial) = 1; % correct withdrawal
+                Outcomes(currentTrial) = 1; % correct response
                 TotalRewardDisplay('add', S.GUI.RewardAmount); % and updates it on each trial. 
-            else
+            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.PunishResponse(1))
+                Outcomes(currentTrial) = 0; % incorrect response
+            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.Punish(1))
                 Outcomes(currentTrial) = -1; % early withdrawal
+            else
+                Outcomes(currentTrial) = 2; % did not choose              
             end
             % calculate total ITI
             if currentTrial == 1
