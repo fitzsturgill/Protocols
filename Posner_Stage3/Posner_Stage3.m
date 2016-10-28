@@ -1,8 +1,6 @@
 function Posner_Stage3
-    %note during training, there is no distinction between invalid/valid trials
-    %because the "cue light" is a pre-emptive, bidirectional flash (i.e. dim
-    %flash appears on both the right and left side prior to the appearance of
-    %the target light)
+% Posner Task
+% Currently, trace, cue and target durations are NOT jittered
 
     global BpodSystem
     
