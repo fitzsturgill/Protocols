@@ -21,9 +21,12 @@ function Posner_Stage3
         S.GUI.Graceperiod = 0.05;
 
         S.GUI.ITI = 2;
-        % Inf for step fractions disables adjustment of delay periods
-        % during posner task
+        
+
         S.GUI.delayAdjust_trialWindow = 10;
+        % *********** !!!!!!!!!!!!!!!!!
+%         Inf for step fractions disables adjustment of delay periods
+%         during Posner_Stage3      
         S.GUI.delayAdjust_stepUpFraction = Inf; % if P% of trials are correct over T trials, then increase the delay periods by delayAdjust_Increment
         S.GUI.delayAdjust_stepDownFraction = Inf; % if P% of trials are incorrect over T trials, then decrease the delays
         S.GUI.delayAdjust_increment = 0.01;
@@ -235,8 +238,9 @@ function Posner_Stage3
             'Timer', 0,...
             'StateChangeConditions', {'GlobalTimer3_End', 'Target', 'Port2Out', 'trigGrace_Trace'},...
             'OutputActions', BaselineLight);
+        %% Present Target and wait for response
         % target state assumed to be too short to enable the mouse to
-        % respond (by moving from center to left or right port
+        % respond (by moving from center to left or right port)
         sma = AddState(sma, 'Name', 'Target', ...
             'Timer', S.GUI.Target,...
             'StateChangeConditions', {'Tup', 'WaitForResponse'},...
