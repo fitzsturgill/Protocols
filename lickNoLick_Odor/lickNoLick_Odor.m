@@ -23,7 +23,16 @@ function lickNoLick_Odor
         S.GUI.PunishOn = 0;  % during training, initially present CS+ trials only
         S.GUI.Odor1Valve = 5;
         S.GUI.Odor2Valve = 6;
-        S.GUI.Epoch
+        % parameters controling reversals
+        S.BlockFirstReverseCorrect = 30; % number of correct responses necessary prior to initial reversal
+        S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
+        S.BlockCountCorrect = 0; % tally of correct responses prior to a reversal
+        S.BlockMinCorrect = 10;
+        S.BlockMeanAdditionalCorrect = 10;
+        S.BlockMaxAdditionalCorrect = S.BlockMeanAdditionalCorrect * 2;
+        S.BlockAdditionalCorrect = []; % determined adaptively
+%         S.GUI.Reverse = 0; % determined adaptively, do I need this?
+
         S.OdorTime = 1;
         S.PreCsRecording = 4;
         S.PostOutcomeRecording = 3;
@@ -100,7 +109,7 @@ function lickNoLick_Odor
     %% initialize trial types and outcomes
     MaxTrials = 1000;
     if S.GUI.PunishOn
-        TrialTypesSimple = randi(2, 1, MaxTrials); % 1 = CS+, 2 = CS-
+        TrialTypesSimple = randi(2, 1, MaxTrials); % 1 = Odor1, 2 = Odor2
     else
         TrialTypesSimple = ones(1, MaxTrials); % during training, initially present CS+ trials only
     end
@@ -226,12 +235,153 @@ function lickNoLick_Odor
         sma = AddState(sma, 'Name','PostUsRecording',...
             'Timer',S.PostUsRecording,...  
             'StateChangeConditions',{'Tup','exit'},...
-            'OutputActions',{});        
+            'OutputActions',{});
+        %%
+        SendStateMatrix(sma);
+
+        %% prep data acquisition
+        preparePhotometryAcq(S);
+
+        %% Run state matrix
+        RawEvents = RunStateMatrix();  % Blocking!
         
+        %% Stop Photometry session
+        stopPhotometryAcq;        
+        if ~isempty(fieldnames(RawEvents)) % If trial data was returned
+            %% Process NIDAQ session
+            processPhotometryAcq(currentTrial);
+            %% online plotting
+            processPhotometryOnline(currentTrial);
+            updatePhotometryPlot(startX)            
+            %% collect and save data
+            BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
+            BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
+            
+
+            % determine outcome
+            if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.Reward(1))
+                TrialOutcome = 1; % hit
+                TotalRewardDisplay('add', S.GUI.Reward); % update reward display                
+            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.Punish(1))
+                TrialOutcome = 0; % false alarm
+            else
+                switch lickOutcome
+                    case 'Punish'
+                        TrialOutcome = 2; % correct rejection
+                    case 'Reward'
+                        TrialOutcome = -1; % miss
+                end
+            end
+            
+            BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
+            BpodSystem.Data.TrialTypesSimple(end + 1) = TrialTypesSimple(currentTrial);                
+            BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
+            BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
+            BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
+            BpodSystem.Data.isReverse(end + 1) = isReverse(currentTrial);
+    
+
+            
+            bpLickRaster(BpodSystem.Data, lickRasterPlot.Types{1}, lickRasterPlot.Outcomes{1}, 'Us', [], lickRasterPlot.Ax(1));
+            set(gca, 'XLim', [-6, 4]);
+            bpLickRaster(BpodSystem.Data, lickRasterPlot.Types{2}, lickRasterPlot.Outcomes{2}, 'Us', [], lickRasterPlot.Ax(2));            
+            set(gca, 'XLim', [-6, 4]);
+            
+            %% update lick histograms
+            axes(lickHistPlot.ax);
+            cla;
+            linecolors = {'c', 'm', 'b', 'r', 'k'};
+            for i = 1:length(lickHistPlot.Types);
+                bpLickHist(BpodSystem.Data, lickHistPlot.Types(i), lickHistPlot.Outcomes(i), lickHistPlot.binSpecs{i},...
+                    lickHistPlot.zeroField{i}, lickHistPlot.startField{i}, lickHistPlot.endField{i}, linecolors(i), [], gca);
+            end
+            %% update photometry rasters
+            displaySampleRate = nidaq.sample_rate / nidaq.online.decimationFactor;
+            x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);
+            x2 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(2), displaySampleRate, 0);        
+            types = BpodSystem.ProtocolFigures.phRaster.types;
+%             lookupFactor = S.GUI.phRasterScaling;
+            lookupFactor = 4;
+            xData = [min(nidaq.online.trialXData) max(nidaq.online.trialXData)] + startX;
+            for i = 1:length(types)
+                if S.GUI.LED1_amp > 0
+                    phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));
+                    phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));    
+                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
+                    trials = onlineFilterTrials(types{i},[],[]);
+                    nidaq.online.trialXData
+                    CData = BpodSystem.PluginObjects.Photometry.trialDFF{1}(trials, :);
+                    image('XData', xData,...
+                        'YData', [1 size(CData, 1)],...
+                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                    set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+                end
+                if S.GUI.LED2_amp > 0
+                    phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));
+                    phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));    
+                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i);
+                    trials = onlineFilterTrials(types{i},[],[]);
+                    nidaq.online.trialXData
+                    CData = BpodSystem.PluginObjects.Photometry.trialDFF{2}(trials, :);
+                    image('XData', xData,...
+                        'YData', [1 size(CData, 1)],...
+                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                    set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+                end                
+            end
+            
+            %% save data
+            SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+            
+           %% adaptive code or function to determine if a reversal is necessary 
+%         % parameters controling reversals
+%         S.BlockFirstReverseCorrect = 30; % number of correct responses necessary prior to initial reversal
+%         S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
+%         S.BlockCountCorrect = 0; % tally of correct responses prior to a reversal
+%         S.BlockMinCorrect = 10;
+%         S.BlockMeanAdditionalCorrect = 10;
+%         S.BlockMaxAdditionalCorrect = S.BlockMeanAdditionalCorrect * 2;
+%         S.BlockAdditionalCorrect = []; % determined adaptively
+%         S.GUI.Reverse = 0; % determined adaptively, do I need this?   
+            
+            
+            lastReverse = find(diff(BpodSystem.Data.isReverse));
+            if isempty(lastReverse)
+                lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
+            else
+                lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
+            end
+            if lastReverse == 1;
+                nCorrectNeeded = S.BlockFirstReverseCorrect;
+            end
+            nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end)));
+            if nCorrect == nCorrectNeeded % reverse next trial
+%                 Determine nCorrectNeeded for next block
+                p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
+                additionalCorrectNeeded = Inf;
+                while additionalCorrectNeeded > S.BlockMaxAdditionalCorrect
+                    additionalCorrectNeeded = geornd(p); % geometric distribution with probability = p of success on each trial
+                end
+                nCorrectNeeded = S.BlockMinCorrect + additionalCorrectNeeded;
+                if isReverse(currentTrial)
+                    isReverse((currentTrial + 1):end) = 0;
+                else
+                    isReverse((currentTrial + 1):end) = 1;
+                end
+                TrialTypes = TrialTypesSimple + isReverse * 2; % shift the trialtype up by 2 for reversals...
+                warning('make sure syncing to parameter gui is working!');                
+                S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
+                S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+            end
+            
+
+    %        if necessary, increment epoch and toggle isReversal for future
+    %        trials            
+        else
+            disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
+        end
         
-       %% adaptive code or function to determine if a reversal is necessary 
-%        if necessary, increment epoch and toggle isReversal for future
-%        trials
+
     end
         
         
