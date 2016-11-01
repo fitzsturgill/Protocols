@@ -3,6 +3,10 @@ function lickNoLick_Odor
 % reinforcement outcomes
 % Photometry support
 
+
+% TO DO: 1) should I add ITI after start? 2s ITI? probably to allow for future expansion
+% 2)implement brown noise (house light mimic) 
+
     global BpodSystem
     
     
@@ -15,6 +19,7 @@ function lickNoLick_Odor
         S.GUI.Epoch = 1;
         S.GUI.LED1_amp = 1.5;
         S.GUI.LED2_amp = 0;
+        S.GUI.ITI = 0; % reserved for future use
         S.GUI.NoLick = 1.5; % mouse must stop licking for this period to advance to the next trial
         S.GUI.AnswerDelay = 1; % post-odor, time until answer period
         S.GUI.Answer = 1; % answer period duration
@@ -64,6 +69,14 @@ function lickNoLick_Odor
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+    
+    %% Generate white noise (I want to make this brown noise eventually)
+    HouseLightSound = (rand(1,SF*.5)*2) - 1; %  2s punish sound
+    PsychToolboxSoundServer('init')
+    PsychToolboxSoundServer('Load', 2, HouseLightSound);
+    % Set soft code handler to trigger sounds
+    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+
     
     % brown noise (house light equivalent) signaling intertrial interval
 %     S.GUI.NoLick = length of sounds
@@ -118,12 +131,13 @@ function lickNoLick_Odor
     Outcomes = NaN(1, MaxTrials); % NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
 
     
-    BpodSystem.Data.TrialTypes = [];
-    BpodSystem.Data.TrialOutcome = [];
+    BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
+    BpodSystem.Data.TrialOutcome = [];% onlineFilterTrials dependent on this variable
     BpodSystem.Data.TrialTypesSimple = [];    
     BpodSystem.Data.OdorValve = [];
-    BpodSystem.Data.Epoch = [];
+    BpodSystem.Data.Epoch = [];% onlineFilterTrials dependent on this variable
     BpodSystem.Data.isReverse = [];
+    BpodSystem.Data.nCorrect = []; % computed for each trial, cumulative tally of correct responses within the reversal block to which the trial belongs
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -142,13 +156,6 @@ function lickNoLick_Odor
                                                             4, [0 1]};
     end
 %% Define the axes matrix positions on the figure
-
-%     matpos_big = [0 .1 1 .9];
-    matpos_lickRaster = [0 0.1 2/5 0.6 * 0.9]; % 2/3 * 0.9,  2/3 of fig height discounting height of title axis
-    matpos_phRaster = [2/5 0.1 3/5 0.6 * 0.9];
-    matpos_avgs = [0 (0.6 * 0.9 + .1) 1 0.4 * 0.9];
-%     matpos_Ph = [0 .5 1 .5];
-   
   
     if S.GUI.LED1_amp > 0
         BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
@@ -161,6 +168,7 @@ function lickNoLick_Odor
         hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));            
         BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
         set(hAx, 'YDir', 'Reverse');
+        BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
     end
     
     if S.GUI.LED2_amp > 0
@@ -174,6 +182,7 @@ function lickNoLick_Odor
         hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));            
         BpodSystem.ProtocolFigures.phRaster.ax_ch2 = hAx;
         set(hAx, 'YDir', 'Reverse');
+        BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));        
     end    
     
 
@@ -225,11 +234,15 @@ function lickNoLick_Odor
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'ITI'},...
-            'OutputActions', {});         
+            'OutputActions', {});
+        sma = AddState(sma,'Name', 'ITI', ...
+            'Timer', S.GUI.ITI,...
+            'StateChangeConditions', {'Tup', 'NoLick'},...
+            'OutputActions', {'SoftCode', 2}); % Sound on
         sma = AddState(sma,'Name', 'NoLick', ...
             'Timer', S.GUI.NoLick,...
             'StateChangeConditions', {'Tup', 'PreCsRecording','Port1In','RestartNoLick'},...
-            'OutputActions', {}); % Sound on, to do
+            'OutputActions', {'SoftCode', 2}); % Sound on
         sma = AddState(sma,'Name', 'RestartNoLick', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'NoLick',},...
@@ -327,12 +340,7 @@ function lickNoLick_Odor
             BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             BpodSystem.Data.isReverse(end + 1) = isReverse(currentTrial);
-    
 
-            
-            
-
-            
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
             
@@ -376,10 +384,16 @@ function lickNoLick_Odor
                     S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
                     S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
                 end
+            else
+                % correct computed for hit trials across last 20 trials
+                % in kludgy fashion nCorrect means fraction correct when punish = off currently
+                nCorrect = length(find(BpodSystem.Data.TrialOutcome(max(end - 20, 1):end) == 1))...
+                    / length(find(ismember(BpodSystem.Data.TrialTypes(max(end - 20, 1):end), [1 4]))); 
             end
+            BpodSystem.Data.nCorrect(end + 1) = nCorrect;
+            %% update photometry raster plots, see subfunction
+            updatePhotometryRasters;
 
-    %        if necessary, increment epoch and toggle isReversal for future
-    %        trials            
         else
             disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
         end
@@ -391,59 +405,52 @@ end
 function updatePhotometryRasters
     global BpodSystem nidaq
     
-% ensureFigure('test', 1);
-% 
-% ha = axes('YDir', 'Reverse');
-% 
-% nTrials = length(find(trialsByType{1}));
-% xData = TE.Photometry.xData;
-% cData = TE.Photometry.data(1).dFF(trialsByType{1}, :);
-% nSamples = size(cData, 2);
-% %%
-% outcome = logical(randi(2, nTrials, 1) - 1);
-% cData2 = NaN(nTrials, size(cData, 2) * 2);
-% %%
-% cData2(outcome, (nSamples+1):end) = cData(outcome, :);
-% cData2(~outcome, (1:nSamples)) = fliplr(cData(~outcome, :));
-% ih = image('YData', [1 size(cData, 1)],...
-%     'CData', cData2, 'CDataMapping', 'Scaled', 'Parent', gca);
-% 
-% set(gca, 'YLim', [1 size(cData2, 1)], 'CLim', [-0.0075 0.0095]);    
     
-            %% update photometry rasters
-            displaySampleRate = nidaq.sample_rate / nidaq.online.decimationFactor;
-            x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);
-            x2 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(2), displaySampleRate, 0);        
-            types = BpodSystem.ProtocolFigures.phRaster.types;
+    %% update photometry rasters
+    displaySampleRate = nidaq.sample_rate / nidaq.online.decimationFactor;
+    x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);
+    x2 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(2), displaySampleRate, 0);        
+    TypesOutcomes = BpodSystem.ProtocolFigures.phRaster.TypesOutcomes;
 %             lookupFactor = S.GUI.phRasterScaling;
-            lookupFactor = 4;
-            xData = [min(nidaq.online.trialXData) max(nidaq.online.trialXData)] + startX;
-            for i = 1:length(types)
-                if S.GUI.LED1_amp > 0
-                    phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));
-                    phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));    
-                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
-                    trials = onlineFilterTrials(types{i},[],[]);
-                    nidaq.online.trialXData
-                    CData = BpodSystem.PluginObjects.Photometry.trialDFF{1}(trials, :);
-                    image('XData', xData,...
-                        'YData', [1 size(CData, 1)],...
-                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
-                    set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
-                end
-                if S.GUI.LED2_amp > 0
-                    phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));
-                    phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));    
-                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i);
-                    trials = onlineFilterTrials(types{i},[],[]);
-                    nidaq.online.trialXData
-                    CData = BpodSystem.PluginObjects.Photometry.trialDFF{2}(trials, :);
-                    image('XData', xData,...
-                        'YData', [1 size(CData, 1)],...
-                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
-                    set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
-                end                
-            end
+    lookupFactor = 4;
+    for i = 1:size(TypesOutcomes, 1)
+        if S.GUI.LED1_amp > 0
+            channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
+            nTrials = size(channelData, 1);
+            nSamples = size(channelData, 2);
+            set(BpodSystem.ProtocolFigures_phRaster.nCorrectLine_ch1, 'XData', 1:nTrials, 'YData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'XLim', [1 nTrials], 'YLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            phMean = mean(mean(channelData(:,x1:x2)));
+            phStd = mean(std(channelData(:,x1:x2)));    
+            ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
+            outcome_left = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(1),[]);
+            outcome_right = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(2),[]);                 
+            CData = NaN(nTrials, nSamples * 2); % double width for split, mirrored, dual outcome raster
+            CData(outcome_left, (1:nSamples)) = fliplr(channelData(outcome_left, :));
+            CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);            
+            image('YData', [1 size(CData, 1)],...
+                'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+        end
+        if S.GUI.LED2_amp > 0
+            channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
+            nTrials = size(channelData, 1);
+            nSamples = size(channelData, 2);
+            set(BpodSystem.ProtocolFigures_phRaster.nCorrectLine_ch2, 'XData', 1:nTrials, 'YData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'XLim', [1 nTrials], 'YLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            phMean = mean(mean(channelData(:,x1:x2)));
+            phStd = mean(std(channelData(:,x1:x2)));    
+            ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i + 1); % phRaster axes start at i + 1
+            outcome_left = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(1),[]);
+            outcome_right = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(2),[]);                 
+            CData = NaN(nTrials, nSamples * 2); % double width for split, mirrored, dual outcome raster
+            CData(outcome_left, (1:nSamples)) = fliplr(channelData(outcome_left, :));
+            CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);            
+            image('YData', [1 size(CData, 1)],...
+                'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+        end        
+    end
 end
 
         
