@@ -21,6 +21,7 @@ function Posner_Stage3
         S.GUI.Graceperiod = 0.05;
 
         S.GUI.ITI = 2;
+        S.GUI.LeftBiasFraction = 0.5; % 0.5 for even
         
 
         S.GUI.delayAdjust_trialWindow = 10;
@@ -63,11 +64,11 @@ function Posner_Stage3
     % generate randomized trial types
     typeMatrix = [...
         % valid cue
-        1, S.GUI.validFraction/2;... %  target left, cue left
-        2, S.GUI.validFraction/2;...  % target right, cue right
+        1, S.GUI.validFraction * S.GUI.LeftBiasFraction;... %  target left, cue left
+        2, S.GUI.validFraction * (1 - S.GUI.LeftBiasFraction);...  % target right, cue right
         % invalid cue
-        3, (1 - S.GUI.validFraction)/2;...  % target left, cue right
-        4, (1 - S.GUI.validFraction)/2;...  % target right, cue left
+        3, (1 - S.GUI.validFraction) * S.GUI.LeftBiasFraction;...  % target left, cue right
+        4, (1 - S.GUI.validFraction) * (1 - S.GUI.LeftBiasFraction);...  % target right, cue left
         ];
     TrialTypes = defineRandomizedTrials(typeMatrix, MaxTrials);
 % NaN: future trial (blue), -1: early withdrawal (red circle), 0: incorrect choice (red dot), 1: correct
