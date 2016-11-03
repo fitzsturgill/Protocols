@@ -47,7 +47,7 @@ function lickNoLick_training_stage1
     SF = 192000; 
     
     % linear ramp of sound for 10ms at onset and offset
-    neutralTone = taperedSineWave(SF, S.ToneFreq, S.ToneDuration, 0.01); % 10ms taper
+    neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
@@ -64,11 +64,11 @@ function lickNoLick_training_stage1
     performance.fig = ensureFigure('performance', 1);
     performance.Timeout_ax = subplot(2,1,1);
     ylabel('timeout (s)');
-    performance.Timeout_lh = plot([]);
+    performance.Timeout_lh = plot(NaN);
 
     performance.ResponseTime_ax = subplot(2,1,2);
     ylabel('response latency (s)');
-    performance.ResponseTime_lh = plot([]);
+    performance.ResponseTime_lh = plot(NaN);
     
 %% initialize ITIs and RTs to measure how efficiently mouse is obtaining reward
     BpodSystem.Data.Timeout = []; % time during which "house light" tone is turned on
@@ -122,9 +122,9 @@ function lickNoLick_training_stage1
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data            
             TotalRewardDisplay('add', S.GUI.Reward);
             % calculate timeout and response time
-            BpodSystem.Data.ResponseTime(currentTrial) = diff(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForLick); 
-            BpodSystem.Data.Timeout(currentTrial) =...
-            BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForLick...        
+            BpodSystem.Data.ResponseTime(end + 1) = diff(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForLick); 
+            BpodSystem.Data.Timeout(end + 1) =...
+            BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForLick(1)...        
                 - BpodSystem.Data.TrialStartTimestamp(currentTrial);
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
             % update figures
