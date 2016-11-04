@@ -33,8 +33,8 @@ function Posner_Stage3
         S.GUI.delayAdjust_increment = 0.01;
         
         S.GUI.validFraction = 0.8;
-
-        S.ResponseWindow = 4; % window in which mouse can make a response
+        S.GUI.LeftBiasFraction = 0.5;
+        S.GUI.ResponseWindow = 4; % window in which mouse can make a response
         
         S.DrinkingGrace = 0.2;
         
@@ -46,8 +46,9 @@ function Posner_Stage3
         S.minCue = 0.02;  % 
         
         S.CenterPokeTime = 0.05; % WHAT VALUE TO USE HERE????????????
-    elseif ~isfield(S.GUI, 'LeftBiasFraction')
-        S.GUI.LeftBiasFraction = 0.5; % 0.5 for even
+    elseif ~isfield(S.GUI, 'ResponseWindow')
+        S.GUI.ResponseWindow = 4;
+        %         S.GUI.LeftBiasFraction = 0.5; % 0.5 for even
     end
 
     % Initialize parameter GUI plugin
