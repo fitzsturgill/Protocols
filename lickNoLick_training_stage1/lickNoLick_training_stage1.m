@@ -53,8 +53,7 @@ function lickNoLick_training_stage1
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     
     %% Generate white noise (I want to make this brown noise eventually)
-    HouseLightSound = (rand(1,SF*.5)*2) - 1; %  2s punish sound
-    PsychToolboxSoundServer('init')
+    HouseLightSound = (rand(1,SF*.5)*S.GUI.NoLick) - 1; %  2s punish sound
     PsychToolboxSoundServer('Load', 2, HouseLightSound);
     % Set soft code handler to trigger sounds
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
