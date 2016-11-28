@@ -33,8 +33,10 @@ function Posner_Stage3
         S.GUI.delayAdjust_increment = 0.01;
         
         S.GUI.validFraction = 0.8;
-        S.GUI.LeftBiasFraction = 0.5;
-        S.GUI.ResponseWindow = 4; % window in which mouse can make a response
+        S.GUI.biasMode = 0; % 0 = off, 1 = repeat left trials, 2 = repeat right trials
+        
+
+        S.ResponseWindow = 4; % window in which mouse can make a response
         
         S.DrinkingGrace = 0.2;
         
@@ -46,9 +48,8 @@ function Posner_Stage3
         S.minCue = 0.02;  % 
         
         S.CenterPokeTime = 0.05; % WHAT VALUE TO USE HERE????????????
-    elseif ~isfield(S.GUI, 'ResponseWindow')
-        S.GUI.ResponseWindow = 4;
-        %         S.GUI.LeftBiasFraction = 0.5; % 0.5 for even
+    elseif ~isfield(S.GUI, 'LeftBiasFraction')
+        S.GUI.LeftBiasFraction = 0.5; % 0.5 for even
     end
 
     % Initialize parameter GUI plugin
@@ -126,8 +127,14 @@ function Posner_Stage3
     %         end
     %     end
 
-        %% 
-
+        %% AJ - Bias Correction
+        if S.GUI.biasMode && currentTrial > 1 && TrialOutcomes[currentTrial - 1] == 0
+            if (ismember(TrialTypes[currentTrial - 1], [1 3]) && S.GUI.biasMode == 1) || ...
+                    (ismember(TrialTypes[currentTrial - 1], [2 4]) && S.GUI.biasMode == 2)
+                TrialTypes[currentTrial] = TrialTypes[currentTrial - 1];
+            end  
+        end
+        %%
         switch TrialTypes(currentTrial) % Determine trial-specific state matrix fields
             % valid cue
             case 1 %target left, cue left
