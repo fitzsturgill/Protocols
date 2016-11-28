@@ -71,17 +71,14 @@ function lickNoLick_Odor
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     
     %% Generate white noise (I want to make this brown noise eventually)
-    HouseLightSound = (rand(1,SF*.5)*2) - 1; %  2s punish sound
-    PsychToolboxSoundServer('init')
-    PsychToolboxSoundServer('Load', 2, HouseLightSound);
-    % Set soft code handler to trigger sounds
-    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
-
-    
-    % brown noise (house light equivalent) signaling intertrial interval
-%     S.GUI.NoLick = length of sounds
-%     use quentin's sound generator function???
-
+    if ~BpodSystem.EmulatorMode
+        load('PulsePalParamFeedback.mat');
+        ProgramPulsePal(PulsePalParamFeedback);        
+        maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
+        nPulses = 1000;
+        SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
+        SendCustomWaveform(2, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %        
+    end
     
     %% Initialize olfactometer and point grey camera
     % retrieve machine specific olfactometer settings

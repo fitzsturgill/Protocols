@@ -53,10 +53,14 @@ function lickNoLick_training_stage1
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     
     %% Generate white noise (I want to make this brown noise eventually)
-    HouseLightSound = (rand(1,SF*.5)*S.GUI.NoLick) - 1; %  2s punish sound
-    PsychToolboxSoundServer('Load', 2, HouseLightSound);
-    % Set soft code handler to trigger sounds
-    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+    if ~BpodSystem.EmulatorMode
+        load('PulsePalParamFeedback.mat');
+        ProgramPulsePal(PulsePalParamFeedback);        
+        maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
+        nPulses = 1000;
+        SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
+        SendCustomWaveform(2, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %        
+    end
 
 %% init lick raster plot
 
@@ -87,7 +91,7 @@ function lickNoLick_training_stage1
         sma = AddState(sma,'Name', 'NoLick', ...
             'Timer', S.GUI.NoLick,...
             'StateChangeConditions', {'Tup', 'WaitForLick','Port1In','RestartNoLick'},...
-            'OutputActions', {'SoftCode', 2}); % Sound on
+            'OutputActions', {'WireState', bitset(0, 2)}); % Sound on
         sma = AddState(sma,'Name', 'RestartNoLick', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'NoLick',},...
