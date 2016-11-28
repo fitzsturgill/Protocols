@@ -141,6 +141,8 @@ function Posner_Stage3
             if (ismember(TrialTypes(currentTrial - 1), [1 3]) && S.GUI.biasMode == 1) || ...
                     (ismember(TrialTypes(currentTrial - 1), [2 4]) && S.GUI.biasMode == 2)
                 TrialTypes(currentTrial) = TrialTypes(currentTrial - 1);
+                TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
+                currentTrial, TrialTypes, Outcomes);
             end  
         end
         %%
