@@ -52,7 +52,7 @@ function lickNoLick_training_stage1
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     
-    %% Generate white noise (I want to make this brown noise eventually)
+    %% Generate and loop white noise using pulse pal
     if ~BpodSystem.EmulatorMode
         load('PulsePalParamFeedback.mat');
         ProgramPulsePal(PulsePalParamFeedback);        
