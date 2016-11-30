@@ -45,7 +45,7 @@ function Posner_Stage3
         S.GUI.biasMode = 0; % 0 = off, 1 = repeat left trials, 2 = repeat right trials
         
 
-        S.ResponseWindow = 4; % window in which mouse can make a response
+        S.ResponseWindow = 8; % window in which mouse can make a response
         
         S.DrinkingGrace = 0.2;
         
