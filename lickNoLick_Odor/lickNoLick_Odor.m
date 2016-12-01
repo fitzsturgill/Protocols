@@ -151,7 +151,7 @@ function lickNoLick_Odor
     BpodSystem.PluginObjects.Photometry.blF = []; %[nTrials, nDemodChannels]
     BpodSystem.PluginObjects.Photometry.baselinePeriod = [1 S.PreCsRecording];
     BpodSystem.PluginObjects.Photometry.trialDFF = {}; % 1 x nDemodChannels cell array, fill with nTrials x nSamples dFF matrix for now to make it easy to pull out raster data
-    if S.GUI.PunishOn
+    if ~S.GUI.PunishOn
         BpodSystem.ProtocolFigures.phRaster.TypesOutcomes = {1, [0 1]};
     else
         BpodSystem.ProtocolFigures.phRaster.TypesOutcomes = {1, [0 1]; ... % type, outcomes associated with a split photometry raster plot
@@ -369,7 +369,7 @@ function lickNoLick_Odor
                     lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
                 end
                 if lastReverse == 1;
-                    nCorrectNeeded = S.BlockFirstReverseCorrect;
+                    nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
                 end
                 nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1));
                 if nCorrect == nCorrectNeeded % reverse next trial
@@ -430,8 +430,8 @@ function updatePhotometryRasters
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
-            set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'XData', 1:nTrials, 'YData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'XLim', [0 nTrials], 'YLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
@@ -448,8 +448,8 @@ function updatePhotometryRasters
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
-            set(BpodSystem.ProtocolFigures_phRaster.nCorrectLine_ch2, 'XData', 1:nTrials, 'YData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'XLim', [1 nTrials], 'YLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            set(BpodSystem.ProtocolFigures_phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [1 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i + 1); % phRaster axes start at i + 1
