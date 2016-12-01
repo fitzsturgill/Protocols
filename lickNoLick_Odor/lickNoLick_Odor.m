@@ -40,11 +40,11 @@ function lickNoLick_Odor
 
         S.OdorTime = 1;
         S.PreCsRecording = 4;
-        S.PostOutcomeRecording = 3;
+        S.PostUsRecording = 3;
         S.currentValve = []; % holds odor valve # for current trial
-        S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
         S.RewardValveCode = 1;
         S.PunishValveCode = 2;
+        S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);        
     end
 
     %% Pause and wait for user to edit parameter GUI 
@@ -58,7 +58,7 @@ function lickNoLick_Odor
 
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.GUI.AnswerDelay + S.GUI.Answer + S.PostUsRecording;
-    startX = 0 - S.PreCsRecording - S.GUI.OdorTime - S.GUI.Delay; % 0 defined as time from reinforcement
+    startX = 0 - S.PreCsRecording - S.OdorTime - S.GUI.AnswerDelay; % 0 defined as time from reinforcement
     S = initPhotometry(S);
 
     %% Initialize Sound Stimuli
@@ -82,14 +82,14 @@ function lickNoLick_Odor
     
     %% Initialize olfactometer and point grey camera
     % retrieve machine specific olfactometer settings
-    addpath(genpath(fullfile(BpodSystem.BpodPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
+    addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
     olfSettings = machineSpecific_Olfactometer;
-    rmpath(genpath(fullfile(BpodSystem.BpodPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict
+    rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict
 
     % retrieve machine specific point grey camera settings
-    addpath(genpath(fullfile(BpodSystem.BpodPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
+    addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
     pgSettings = machineSpecific_pointGrey;
-    rmpath(genpath(fullfile(BpodSystem.BpodPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict    
+    rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict    
 
     % initialize olfactometer slave arduino
     valveSlave = initValveSlave(olfSettings.portName);
