@@ -65,7 +65,7 @@ function lickNoLick_Odor
     SF = 192000; 
     
     % linear ramp of sound for 10ms at onset and offset
-    neutralTone = taperedSineWave(SF, S.ToneFreq, S.ToneDuration, 0.01); % 10ms taper
+    neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
