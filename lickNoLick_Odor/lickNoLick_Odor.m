@@ -139,7 +139,14 @@ function lickNoLick_Odor
     lickOutcome = '';
     noLickOutcome = '';
     
-     
+%% Init nidaq trial data plot: UPDATE THIS TO USE PLUGINOBJECTS???
+    scrsz = get(groot,'ScreenSize'); 
+    
+    BpodSystem.ProtocolFigures.NIDAQFig       = figure(...
+        'Position', [25 scrsz(4)*2/3-100 scrsz(3)/2-50  scrsz(4)/3],'Name','NIDAQ plot','numbertitle','off');
+    BpodSystem.ProtocolFigures.NIDAQPanel1     = subplot(2,1,1);
+    BpodSystem.ProtocolFigures.NIDAQPanel2     = subplot(2,1,2); 
+
 %%  Initialize photometry session analysis plots    
     BpodSystem.PluginObjects.Photometry.blF = []; %[nTrials, nDemodChannels]
     BpodSystem.PluginObjects.Photometry.baselinePeriod = [1 S.PreCsRecording];
@@ -224,7 +231,7 @@ function lickNoLick_Odor
         % setup global counter to track number of licks during answer
         % period
         
-        BpodSystem.Data.Settings = S; % is this necessary???
+        BpodSystem.Data.Settings = S; % SAVE SETTINGS, USED BY UPDATEPHOTOMETRYRASTERS SUBFUNCTION CURRENTLY, but redundant with trialSettings
         %% Assemble state matrix
         sma = NewStateMatrix(); 
         sma = SetGlobalTimer(sma,1,S.GUI.Answer); % post cue   
@@ -235,11 +242,11 @@ function lickNoLick_Odor
         sma = AddState(sma,'Name', 'ITI', ...
             'Timer', S.GUI.ITI,...
             'StateChangeConditions', {'Tup', 'NoLick'},...
-            'OutputActions', {'SoftCode', 2}); % Sound on
+            'OutputActions', {'WireState', bitset(0, 2)}); % Sound on
         sma = AddState(sma,'Name', 'NoLick', ...
             'Timer', S.GUI.NoLick,...
-            'StateChangeConditions', {'Tup', 'PreCsRecording','Port1In','RestartNoLick'},...
-            'OutputActions', {'SoftCode', 2}); % Sound on
+            'StateChangeConditions', {'Tup', 'StartRecording','Port1In','RestartNoLick'},...
+            'OutputActions', {'WireState', bitset(0, 2)}); % Sound on
         sma = AddState(sma,'Name', 'RestartNoLick', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'NoLick',},...
@@ -254,7 +261,7 @@ function lickNoLick_Odor
             'OutputActions',{});
         sma = AddState(sma, 'Name', 'Cue', ... 
             'Timer', S.OdorTime,...
-            'StateChangeConditions', {'Tup','Delay'},...
+            'StateChangeConditions', {'Tup','AnswerDelay'},...
             'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});
         sma = AddState(sma, 'Name', 'AnswerDelay', ... 
             'Timer', S.GUI.AnswerDelay,...
@@ -274,10 +281,12 @@ function lickNoLick_Odor
             'OutputActions', {});             
         sma = AddState(sma, 'Name', 'NoLickOutcome',... % dummy state for alignment
             'Timer', 0,...
-            'StateChangeConditions', {'Tup', noLickOutcome});
+            'StateChangeConditions', {'Tup', noLickOutcome},...
+            'OutputActions', {});      
         sma = AddState(sma, 'Name', 'LickOutcome',... % dummy state for alignment
             'Timer', 0,...
-            'StateChangeConditions', {'Tup', lickOutcome});        
+            'StateChangeConditions', {'Tup', lickOutcome},...
+            'OutputActions', {});      
         sma = AddState(sma,'Name', 'Reward', ...
             'Timer', S.RewardValveTime,... %
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
@@ -395,6 +404,12 @@ function lickNoLick_Odor
             disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
         end
         
+        HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+        if BpodSystem.BeingUsed == 0
+            fclose(valveSlave);
+            delete(valveSlave);
+            return
+        end 
 
     end
 end
@@ -411,12 +426,12 @@ function updatePhotometryRasters
 %             lookupFactor = S.GUI.phRasterScaling;
     lookupFactor = 4;
     for i = 1:size(TypesOutcomes, 1)
-        if S.GUI.LED1_amp > 0
+        if BpodSystem.Data.Settings.GUI.LED1_amp > 0
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
-            set(BpodSystem.ProtocolFigures_phRaster.nCorrectLine_ch1, 'XData', 1:nTrials, 'YData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'XLim', [1 nTrials], 'YLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'XData', 1:nTrials, 'YData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'XLim', [0 nTrials], 'YLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
@@ -429,7 +444,7 @@ function updatePhotometryRasters
                 'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
             set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
         end
-        if S.GUI.LED2_amp > 0
+        if BpodSystem.Data.Settings.GUI.LED2_amp > 0
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
