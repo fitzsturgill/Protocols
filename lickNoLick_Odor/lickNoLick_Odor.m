@@ -146,7 +146,13 @@ function lickNoLick_Odor
         'Position', [25 scrsz(4)*2/3-100 scrsz(3)/2-50  scrsz(4)/3],'Name','NIDAQ plot','numbertitle','off');
     BpodSystem.ProtocolFigures.NIDAQPanel1     = subplot(2,1,1);
     BpodSystem.ProtocolFigures.NIDAQPanel2     = subplot(2,1,2); 
-
+    
+%% Outcome Plot
+    trialsToShow = 50;
+    BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none');
+    BpodSystem.GUIHandles.OutcomePlot = axes;
+    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', TrialTypes, 'ntrials', trialsToShow);
+    
 %%  Initialize photometry session analysis plots    
     BpodSystem.PluginObjects.Photometry.blF = []; %[nTrials, nDemodChannels]
     BpodSystem.PluginObjects.Photometry.baselinePeriod = [1 S.PreCsRecording];
@@ -334,8 +340,8 @@ function lickNoLick_Odor
                 TrialOutcome = noLickOutcomes(TrialType);
             end
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
+            Outcomes(currentTrial) = TrialOutcome;
 
-            
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
             BpodSystem.Data.TrialTypesSimple(end + 1) = TrialTypesSimple(currentTrial);                
             BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
@@ -395,6 +401,9 @@ function lickNoLick_Odor
             BpodSystem.Data.nCorrect(end + 1) = nCorrect;
             %% update photometry raster plots, see subfunction
             updatePhotometryRasters;
+            % update outcome plot to reflect upcoming trial
+            TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
+                currentTrial + 1, TrialTypes, Outcomes);
 
         else
             disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
