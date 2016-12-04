@@ -341,6 +341,9 @@ function lickNoLick_Odor
             end
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
             Outcomes(currentTrial) = TrialOutcome;
+            if TrialOutcome == 1
+                TotalRewardDisplay('add', S.GUI.Reward);
+            end
 
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
             BpodSystem.Data.TrialTypesSimple(end + 1) = TrialTypesSimple(currentTrial);                
@@ -373,7 +376,7 @@ function lickNoLick_Odor
                 if lastReverse == 1;
                     nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
                 end
-                nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1));
+                nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) > 0)); % 1=hit, 2=correct rejection, both greater than 0
                 if nCorrect == nCorrectNeeded % reverse next trial
     %                 Determine nCorrectNeeded for next block
                     p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
@@ -447,7 +450,8 @@ function updatePhotometryRasters
             CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);            
             image('YData', [1 size(CData, 1)],...
                 'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
-            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
+                'YTickLabel', {});
         end
         if BpodSystem.Data.Settings.GUI.LED2_amp > 0
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
@@ -465,7 +469,8 @@ function updatePhotometryRasters
             CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);            
             image('YData', [1 size(CData, 1)],...
                 'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
-            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
+                'YTickLabel', {});
         end        
     end
 end
