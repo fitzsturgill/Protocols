@@ -14,17 +14,19 @@ function lickNoLick_Odor
     %% Define parameters
     S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
 
-
+    
     if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
         S.GUI.Epoch = 1;
         S.GUI.LED1_amp = 1.5;
         S.GUI.LED2_amp = 0;
         S.GUI.ITI = 0; % reserved for future use
-        S.GUI.NoLick = 1.5; % mouse must stop licking for this period to advance to the next trial
+        S.GUI.mu_iti = 6; % if > 0, determines random ITI
+        S.GUI.NoLick = 0; % mouse must stop licking for this period to advance to the next trial
         S.GUI.AnswerDelay = 1; % post-odor, time until answer period
         S.GUI.Answer = 1; % answer period duration
         S.GUI.PunishValveTime = 0.2; %s        
         S.GUI.Reward = 8;
+        S.GUI.Pavlovian = 1; % pavlovian option for training, to be used ONLY in conjunction with PunishOn = 0;
         S.GUI.PunishOn = 0;  % during training, initially present CS+ trials only
         S.GUI.Odor1Valve = 5;
         S.GUI.Odor2Valve = 6;
@@ -37,6 +39,7 @@ function lickNoLick_Odor
         S.BlockMaxAdditionalCorrect = S.BlockMeanAdditionalCorrect * 2;
         S.BlockAdditionalCorrect = []; % determined adaptively
 %         S.GUI.Reverse = 0; % determined adaptively, do I need this?
+
 
         S.OdorTime = 1;
         S.PreCsRecording = 4;
@@ -52,6 +55,10 @@ function lickNoLick_Odor
     BpodSystem.Pause = 1;
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+    
+    if S.GUI.Pavlovian && S.GUI.PunishOn
+        error('*** punish should be off during pavlovian training stage ***');
+    end
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
@@ -165,6 +172,12 @@ function lickNoLick_Odor
                                                             3, [0 2]; ...
                                                             4, [-1 1]};
     end
+    
+%% lick raster plots (in progress)
+    if S.GUI.Pavlovian
+        lickRasterFig = ensureFigure('Pavlovian_LickRaster', 1);
+        lickRasterAx = axes('Parent', lickRasterFig);
+    end
 %% Define the axes matrix positions on the figure
   
     if S.GUI.LED1_amp > 0
@@ -207,7 +220,11 @@ function lickNoLick_Odor
             case 1
                 OdorValve = S.GUI.Odor1Valve;
                 lickOutcome = 'Reward';
-                noLickOutcome = 'Neutral';
+                if S.GUI.Pavlovian
+                    noLickOutcome = 'Reward';
+                else                
+                    noLickOutcome = 'Neutral';
+                end
             case 2
                 OdorValve = S.GUI.Odor2Valve;
                 lickOutcome = 'Punish';
@@ -222,6 +239,8 @@ function lickNoLick_Odor
                 noLickOutcome = 'Neutral';
             otherwise
         end
+        
+
 
         %% update odor valve number for current trial
         slaveResponse = updateValveSlave(valveSlave, OdorValve); 
@@ -233,6 +252,14 @@ function lickNoLick_Odor
             disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
         end
         disp(['*** Trial Type = ' num2str(TrialType) ' ***']);
+        
+        %%
+        if S.GUI.mu_iti
+            S.GUI.ITI = inf;
+            while S.GUI.ITI > 3 * S.GUI.mu_iti   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                S.GUI.ITI = exprnd(S.GUI.mu_iti);
+            end        
+        end
         %% TO DO
         % setup global counter to track number of licks during answer
         % period
@@ -332,12 +359,16 @@ function lickNoLick_Odor
             
 
             % determine outcome,   -1 = miss, 0 = f.a., 1 = hit, 2 = c.r.
-            lickOutcomes = [1 0 0 1];
-            noLickOutcomes = [-1 2 2 -1];
-            if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
-                TrialOutcome = lickOutcomes(TrialType);
+            if S.GUI.Pavlovian
+                TrialOutcome = 1;
             else
-                TrialOutcome = noLickOutcomes(TrialType);
+                lickOutcomes = [1 0 0 1];
+                noLickOutcomes = [-1 2 2 -1];
+                if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
+                    TrialOutcome = lickOutcomes(TrialType);
+                else
+                    TrialOutcome = noLickOutcomes(TrialType);
+                end
             end
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
             Outcomes(currentTrial) = TrialOutcome;
@@ -351,6 +382,12 @@ function lickNoLick_Odor
             BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             BpodSystem.Data.isReverse(end + 1) = isReverse(currentTrial);
+            
+            % raster
+            if S.GUI.Pavlovian
+                bpLickRaster(BpodSystem.Data, 1, 1, 'Reward', [], lickRasterAx);
+                set(gca, 'XLim', [startX, startX + S.nidaq.duration]);            
+            end
 
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
