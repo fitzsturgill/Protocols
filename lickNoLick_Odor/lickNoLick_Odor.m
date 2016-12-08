@@ -450,7 +450,7 @@ function lickNoLick_Odor
                 if lastReverse == 1;
                     nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
                 end
-                nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) > 0)); % 1=hit, 2=correct rejection, both greater than 0
+                nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1)); % count hits only
                 if nCorrect == nCorrectNeeded % reverse next trial
     %                 Determine nCorrectNeeded for next block
                     p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
@@ -528,12 +528,12 @@ function updatePhotometryRasters
             CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
             % add color tags marking trial reinforcment outcome
             % high color = reward, 0 color = neutral, low color = punish
-            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 1)), 1:(phRStamp - 1)) = 255; % 255 is arbitrary large value that will max out color table
-            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 2)), 1:(phRStamp - 1)) = 0;            
-            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 3)), 1:(phRStamp - 1)) = -255;            
-            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 1)), (nSamples+1):(nSamples + phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 2)), (nSamples+1):(nSamples + phRStamp) = 0;            
-            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 3)), (nSamples+1):(nSamples + phRStamp) = -255;            
+            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 1)), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
+            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 2)), (nSamples - phRStamp + 1):nSamples) = 0;            
+            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 3)), (nSamples - phRStamp + 1):nSamples) = -255;            
+            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 1)), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
+            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 2)), (nSamples+1):(nSamples + phRStamp)) = 0;            
+            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 3)), (nSamples+1):(nSamples + phRStamp)) = -255;            
             
             image('YData', [1 size(CData, 1)],...
                 'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
