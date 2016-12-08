@@ -60,9 +60,9 @@ function lickNoLick_Odor
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
     
-    if S.GUI.Pavlovian && S.GUI.PunishOn
-        error('*** punish should be off during pavlovian training stage ***');
-    end
+%     if S.GUI.Pavlovian && S.GUI.PunishOn
+%         error('*** punish should be off during pavlovian training stage ***');
+%     end
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
@@ -544,8 +544,8 @@ function updatePhotometryRasters
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
-            set(BpodSystem.ProtocolFigures_phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [1 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i + 1); % phRaster axes start at i + 1
