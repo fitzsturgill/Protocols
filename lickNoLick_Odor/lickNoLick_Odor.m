@@ -26,8 +26,8 @@ function lickNoLick_Odor
         S.GUI.Answer = 1; % answer period duration
         S.GUI.PunishValveTime = 0.2; %s        
         S.GUI.Reward = 8;
-        S.GUI.Pavlovian = 1; % pavlovian option for training, to be used ONLY in conjunction with PunishOn = 0;
-%         S.GUI.PunishOn = 0;  % during training, initially present CS+ trials only
+        S.GUI.Pavlovian = 1; % pavlovian option for training
+
         S.GUI.Odor1Valve = 5;
         S.GUI.Odor2Valve = 6;
         S.GUI.Hit_RewardFraction = 0.7;
@@ -60,9 +60,7 @@ function lickNoLick_Odor
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
     S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
     
-%     if S.GUI.Pavlovian && S.GUI.PunishOn
-%         error('*** punish should be off during pavlovian training stage ***');
-%     end
+
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
@@ -129,11 +127,8 @@ function lickNoLick_Odor
     
     %% initialize trial types and outcomes
     MaxTrials = 1000;
-    if S.GUI.PunishOn
-        TrialTypesSimple = randi(2, 1, MaxTrials); % 1 = Odor1, 2 = Odor2
-    else
-        TrialTypesSimple = ones(1, MaxTrials); % during training, initially present CS+ trials only
-    end
+
+    TrialTypesSimple = randi(2, 1, MaxTrials); % 1 = Odor1, 2 = Odor2
     isReverse = zeros(1, MaxTrials); % 0 = no reverse, 1 = reversed contingencies
     TrialTypes = TrialTypesSimple; % 1=0dor1, CS+ 2=Odor2, CS-, 3=Odor1, CS-, 4=Odor2, CS+, this array (extended for plotting) will be updated dynamically
     Outcomes = NaN(1, MaxTrials); % NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
@@ -169,14 +164,13 @@ function lickNoLick_Odor
     BpodSystem.PluginObjects.Photometry.blF = []; %[nTrials, nDemodChannels]
     BpodSystem.PluginObjects.Photometry.baselinePeriod = [1 S.PreCsRecording];
     BpodSystem.PluginObjects.Photometry.trialDFF = {}; % 1 x nDemodChannels cell array, fill with nTrials x nSamples dFF matrix for now to make it easy to pull out raster data
-    if ~S.GUI.PunishOn
-        BpodSystem.ProtocolFigures.phRaster.TypesOutcomes = {1, [-1 1]};
-    else
-        BpodSystem.ProtocolFigures.phRaster.TypesOutcomes = {1, [-1 1]; ... % type, outcomes associated with a split photometry raster plot
-                                                            2, [0 2]; ...
-                                                            3, [0 2]; ...
-                                                            4, [-1 1]};
-    end
+
+
+    BpodSystem.ProtocolFigures.phRaster.TypesOutcomes = {1, [-1 1]; ... % type, outcomes associated with a split photometry raster plot
+                                                        2, [0 2]; ...
+                                                        3, [0 2]; ...
+                                                        4, [-1 1]};
+
     
 %% lick raster plots (in progress)
     if S.GUI.Pavlovian
@@ -440,41 +434,36 @@ function lickNoLick_Odor
 %         S.BlockAdditionalCorrect = []; % determined adaptively
 %         S.GUI.Reverse = 0; % determined adaptively, do I need this?   
             
-            if S.GUI.PunishOn
-                lastReverse = find(diff(BpodSystem.Data.isReverse));
-                if isempty(lastReverse)
-                    lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
-                else
-                    lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
-                end
-                if lastReverse == 1;
-                    nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
-                end
-                nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1)); % count hits only
-                if nCorrect == nCorrectNeeded % reverse next trial
-    %                 Determine nCorrectNeeded for next block
-                    p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
-                    additionalCorrectNeeded = Inf;
-                    while additionalCorrectNeeded > S.BlockMaxAdditionalCorrect
-                        additionalCorrectNeeded = geornd(p); % geometric distribution with probability = p of success on each trial
-                    end
-                    nCorrectNeeded = S.BlockMinCorrect + additionalCorrectNeeded;
-                    if isReverse(currentTrial)
-                        isReverse((currentTrial + 1):end) = 0;
-                    else
-                        isReverse((currentTrial + 1):end) = 1;
-                    end
-                    TrialTypes = TrialTypesSimple + isReverse * 2; % shift the trialtype up by 2 for reversals...
-                    warning('make sure syncing to parameter gui is working!');                
-                    S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
-                    S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
-                end
+
+            lastReverse = find(diff(BpodSystem.Data.isReverse));
+            if isempty(lastReverse)
+                lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
             else
-                % correct computed for hit trials across last 20 trials
-                % in kludgy fashion nCorrect means fraction correct when punish = off currently
-                nCorrect = length(find(BpodSystem.Data.TrialOutcome(max(end - 20, 1):end) == 1))...
-                    / length(find(ismember(BpodSystem.Data.TrialTypes(max(end - 20, 1):end), [1 4]))); 
+                lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
             end
+            if lastReverse == 1;
+                nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
+            end
+            nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1)); % count hits only
+            if nCorrect == nCorrectNeeded % reverse next trial
+%                 Determine nCorrectNeeded for next block
+                p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
+                additionalCorrectNeeded = Inf;
+                while additionalCorrectNeeded > S.BlockMaxAdditionalCorrect
+                    additionalCorrectNeeded = geornd(p); % geometric distribution with probability = p of success on each trial
+                end
+                nCorrectNeeded = S.BlockMinCorrect + additionalCorrectNeeded;
+                if isReverse(currentTrial)
+                    isReverse((currentTrial + 1):end) = 0;
+                else
+                    isReverse((currentTrial + 1):end) = 1;
+                end
+                TrialTypes = TrialTypesSimple + isReverse * 2; % shift the trialtype up by 2 for reversals...
+                warning('make sure syncing to parameter gui is working!');                
+                S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
+                S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+            end
+
             BpodSystem.Data.nCorrect(end + 1) = nCorrect;
             %% update photometry raster plots, see subfunction
             updatePhotometryRasters;
