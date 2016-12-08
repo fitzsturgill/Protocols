@@ -27,9 +27,13 @@ function lickNoLick_Odor
         S.GUI.PunishValveTime = 0.2; %s        
         S.GUI.Reward = 8;
         S.GUI.Pavlovian = 1; % pavlovian option for training, to be used ONLY in conjunction with PunishOn = 0;
-        S.GUI.PunishOn = 0;  % during training, initially present CS+ trials only
+%         S.GUI.PunishOn = 0;  % during training, initially present CS+ trials only
         S.GUI.Odor1Valve = 5;
         S.GUI.Odor2Valve = 6;
+        S.GUI.Hit_RewardFraction = 0.7;
+        S.GUI.FA_RewardFraction = 0.3;
+        S.GUI.Hit_PunishFraction = 0;
+        S.GUI.FA_PunishFraction = 0;
         % parameters controling reversals
         S.BlockFirstReverseCorrect = 30; % number of correct responses necessary prior to initial reversal
         S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
@@ -133,10 +137,11 @@ function lickNoLick_Odor
     isReverse = zeros(1, MaxTrials); % 0 = no reverse, 1 = reversed contingencies
     TrialTypes = TrialTypesSimple; % 1=0dor1, CS+ 2=Odor2, CS-, 3=Odor1, CS-, 4=Odor2, CS+, this array (extended for plotting) will be updated dynamically
     Outcomes = NaN(1, MaxTrials); % NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
-
+    ReinforcementOutcome = []; % local version of BposSystem.Data.ReinforcementOutcome
     
     BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.TrialOutcome = [];% onlineFilterTrials dependent on this variable
+    BpodSystem.Data.ReinforcementOutcome = []; % i.e. reward, punish or neutral
     BpodSystem.Data.TrialTypesSimple = [];    
     BpodSystem.Data.OdorValve = [];
     BpodSystem.Data.Epoch = [];% onlineFilterTrials dependent on this variable
@@ -214,29 +219,58 @@ function lickNoLick_Odor
     for currentTrial = 1:MaxTrials
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         TrialType = TrialTypes(currentTrial);
-        
-        %% determine odor cues and outcomes for current trial
+
+
+        %% determine odor cues lick outcomes and reinforcement outcomes for current trial
+        chooseHitOutcome = [...
+            % high value odor (no punish)
+            1, S.GUI.Hit_RewardFraction;... %  reward
+            2, 1 - S.GUI.Hit_RewardFraction - S.GUI.Hit_PunishFraction;... % neutral
+            3, S.GUI.Hit_PunishFraction;...  % punish
+            ];
+        HitOutcome = defineRandomizedTrials(chooseHitOutcome, 1);
+        chooseFAOutcome = [...
+            % high value odor (no punish)
+            1, S.GUI.FA_RewardFraction;... %  reward
+            2, 1 - S.GUI.FA_RewardFraction - S.GUI.FA_PunishFraction;... % neutral
+            3, S.GUI.FA_PunishFraction;...  % punish
+            ];        
+        FAOutcome = defineRandomizedTrials(choosechooseFAOutcome, 1);        
+        ReinforcementOutcomes = {'Reward', 'Neutral', 'Punish'};
+
         switch TrialType
             case 1
                 OdorValve = S.GUI.Odor1Valve;
-                lickOutcome = 'Reward';
+                lickOutcome = ReinforcementOutcomes{HitOutcome};          
                 if S.GUI.Pavlovian
-                    noLickOutcome = 'Reward';
+                    noLickOutcome = lickOutcome; % animal's response doesn't affect reinforcement outcome
                 else                
                     noLickOutcome = 'Neutral';
                 end
             case 2
                 OdorValve = S.GUI.Odor2Valve;
-                lickOutcome = 'Punish';
-                noLickOutcome = 'Neutral';
+                lickOutcome = ReinforcementOutcomes{FAOutcome};          
+                if S.GUI.Pavlovian
+                    noLickOutcome = lickOutcome; % animal's response doesn't affect reinforcement outcome
+                else                
+                    noLickOutcome = 'Neutral';
+                end
             case 3
                 OdorValve = S.GUI.Odor1Valve;
-                lickOutcome = 'Punish';
-                noLickOutcome = 'Neutral';
+                lickOutcome = ReinforcementOutcomes{FAOutcome};          
+                if S.GUI.Pavlovian
+                    noLickOutcome = lickOutcome; % animal's response doesn't affect reinforcement outcome
+                else                
+                    noLickOutcome = 'Neutral';
+                end                                               
             case 4
                 OdorValve = S.GUI.Odor2Valve;
-                lickOutcome = 'Reward';
-                noLickOutcome = 'Neutral';
+                lickOutcome = ReinforcementOutcomes{HitOutcome};          
+                if S.GUI.Pavlovian
+                    noLickOutcome = lickOutcome; % animal's response doesn't affect reinforcement outcome
+                else                
+                    noLickOutcome = 'Neutral';
+                end                
             otherwise
         end
         
@@ -253,7 +287,7 @@ function lickNoLick_Odor
         end
         disp(['*** Trial Type = ' num2str(TrialType) ' ***']);
         
-        %%
+        %% Expotentially distributed ITIs
         if S.GUI.mu_iti
             S.GUI.ITI = inf;
             while S.GUI.ITI > 3 * S.GUI.mu_iti   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
@@ -354,7 +388,7 @@ function lickNoLick_Odor
             processPhotometryOnline(currentTrial);
             updatePhotometryPlot(startX);         
             %% collect and save data
-            BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
+            BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
             
 
@@ -366,13 +400,15 @@ function lickNoLick_Odor
                 noLickOutcomes = [-1 2 2 -1];
                 if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
                     TrialOutcome = lickOutcomes(TrialType);
+                    ReinforcementOutcome = HitOutcome;        
                 else
                     TrialOutcome = noLickOutcomes(TrialType);
+                    ReinforcementOutcome = FAOutcome;                    
                 end
             end
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
             Outcomes(currentTrial) = TrialOutcome;
-            if TrialOutcome == 1
+            if ReinforcementOutcome == 1
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
 
@@ -382,8 +418,9 @@ function lickNoLick_Odor
             BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             BpodSystem.Data.isReverse(end + 1) = isReverse(currentTrial);
+            BpodSystem.Data.ReinforcementOutcome(end + 1) = ReinforcementOutcome; % i.e. reward, punish or neutral
             
-            % raster
+            % raster, kludgy
             if S.GUI.Pavlovian
                 bpLickRaster(BpodSystem.Data, 1, 1, 'Reward', [], lickRasterAx);
                 set(gca, 'XLim', [startX, startX + S.nidaq.duration]);            
@@ -470,6 +507,7 @@ function updatePhotometryRasters
     TypesOutcomes = BpodSystem.ProtocolFigures.phRaster.TypesOutcomes;
 %             lookupFactor = S.GUI.phRasterScaling;
     lookupFactor = 4;
+    phRStamp = 6; % # pixels to push high or low to indicate alternative reinforcement outcomes
     for i = 1:size(TypesOutcomes, 1)
         if BpodSystem.Data.Settings.GUI.LED1_amp > 0
             channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
@@ -480,11 +518,23 @@ function updatePhotometryRasters
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
-            outcome_left = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(1),[]);
-            outcome_right = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(2),[]);                 
+            outcome_left = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(1),[]);            
+            outcome_right = onlineFilterTrials(TypesOutcomes{i,1},TypesOutcomes{i,2}(2),[]);
+            rewardTrials = find(BpodSystem.Data.ReinforcementOutcome == 1);
+            neutralTrials = find(BpodSystem.Data.ReinforcementOutcome == 2);
+            punishTrials = find(BpodSystem.Data.ReinforcementOutcome == 3);
             CData = NaN(nTrials, nSamples * 2); % double width for split, mirrored, dual outcome raster
             CData(outcome_left, (1:nSamples)) = fliplr(channelData(outcome_left, :));
-            CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);            
+            CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
+            % add color tags marking trial reinforcment outcome
+            % high color = reward, 0 color = neutral, low color = punish
+            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 1)), 1:(phRStamp - 1)) = 255; % 255 is arbitrary large value that will max out color table
+            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 2)), 1:(phRStamp - 1)) = 0;            
+            CData(intersect(outcome_left, find(BpodSystem.Data.ReinforcementOutcome == 3)), 1:(phRStamp - 1)) = -255;            
+            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 1)), (nSamples+1):(nSamples + phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 2)), (nSamples+1):(nSamples + phRStamp) = 0;            
+            CData(intersect(outcome_right, find(BpodSystem.Data.ReinforcementOutcome == 3)), (nSamples+1):(nSamples + phRStamp) = -255;            
+            
             image('YData', [1 size(CData, 1)],...
                 'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
             set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
