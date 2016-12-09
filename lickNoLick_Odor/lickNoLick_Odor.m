@@ -35,7 +35,7 @@ function lickNoLick_Odor
         S.GUI.Hit_PunishFraction = 0;
         S.GUI.FA_PunishFraction = 0;
         % parameters controling reversals
-        S.BlockFirstReverseCorrect = 30; % number of correct responses necessary prior to initial reversal
+        S.BlockFirstReverseCorrect = 10; %30; % number of correct responses necessary prior to initial reversal
         S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
         S.BlockCountCorrect = 0; % tally of correct responses prior to a reversal
         S.BlockMinCorrect = 10;
@@ -229,7 +229,7 @@ function lickNoLick_Odor
             2, 1 - S.GUI.FA_RewardFraction - S.GUI.FA_PunishFraction;... % neutral
             3, S.GUI.FA_PunishFraction;...  % punish
             ];        
-        FAOutcome = defineRandomizedTrials(choosechooseFAOutcome, 1);        
+        FAOutcome = defineRandomizedTrials(chooseFAOutcome, 1);        
         ReinforcementOutcomes = {'Reward', 'Neutral', 'Punish'};
 
         switch TrialType
@@ -394,10 +394,10 @@ function lickNoLick_Odor
                 noLickOutcomes = [-1 2 2 -1];
                 if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
                     TrialOutcome = lickOutcomes(TrialType);
-                    ReinforcementOutcome = HitOutcome;        
+                    ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes);
                 else
                     TrialOutcome = noLickOutcomes(TrialType);
-                    ReinforcementOutcome = FAOutcome;                    
+                    ReinforcementOutcome = strmatch(noLickOutcome, ReinforcementOutcomes);                                  
                 end
             end
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
