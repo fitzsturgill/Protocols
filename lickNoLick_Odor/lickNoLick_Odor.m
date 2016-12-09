@@ -35,11 +35,11 @@ function lickNoLick_Odor
         S.GUI.Hit_PunishFraction = 0;
         S.GUI.FA_PunishFraction = 0;
         % parameters controling reversals
-        S.BlockFirstReverseCorrect = 10; %30; % number of correct responses necessary prior to initial reversal
+        S.BlockFirstReverseCorrect = 5; %30; TESTING % number of correct responses necessary prior to initial reversal
         S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
         S.BlockCountCorrect = 0; % tally of correct responses prior to a reversal
-        S.BlockMinCorrect = 10;
-        S.BlockMeanAdditionalCorrect = 10;
+        S.BlockMinCorrect = 2; %10; TESTING
+        S.BlockMeanAdditionalCorrect = 3; % TESTING 10;
         S.BlockMaxAdditionalCorrect = S.BlockMeanAdditionalCorrect * 2;
         S.BlockAdditionalCorrect = []; % determined adaptively
 %         S.GUI.Reverse = 0; % determined adaptively, do I need this?
@@ -172,11 +172,12 @@ function lickNoLick_Odor
                                                         4, [-1 1]};
 
     
-%% lick raster plots (in progress)
-    if S.GUI.Pavlovian
-        lickRasterFig = ensureFigure('Pavlovian_LickRaster', 1);
-        lickRasterAx = axes('Parent', lickRasterFig);
-    end
+%% lick raster plots (by odor)
+    BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 1, 2);
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(2, 1, 2);        
+
+
 %% Define the axes matrix positions on the figure
   
     if S.GUI.LED1_amp > 0
@@ -191,6 +192,7 @@ function lickNoLick_Odor
         BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
         set(hAx, 'YDir', 'Reverse');
         BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
+        BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'm');
     end
     
     if S.GUI.LED2_amp > 0
@@ -204,7 +206,8 @@ function lickNoLick_Odor
         hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));            
         BpodSystem.ProtocolFigures.phRaster.ax_ch2 = hAx;
         set(hAx, 'YDir', 'Reverse');
-        BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));        
+        BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
+        BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'm');        
     end    
     
 
@@ -412,13 +415,12 @@ function lickNoLick_Odor
             BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             BpodSystem.Data.isReverse(end + 1) = isReverse(currentTrial);
-            BpodSystem.Data.ReinforcementOutcome(end + 1) = ReinforcementOutcome; % i.e. reward, punish or neutral
+            BpodSystem.Data.ReinforcementOutcome(end + 1) = ReinforcementOutcome; % i.e. 1: reward, 2: neutral, 3: punish
             
-            % raster, kludgy
-            if S.GUI.Pavlovian
-                bpLickRaster(BpodSystem.Data, 1, 1, 'Reward', [], lickRasterAx);
-                set(gca, 'XLim', [startX, startX + S.nidaq.duration]);            
-            end
+            % lick rasters by odor                
+            bpLickRaster(BpodSystem.Data, [1 3], [], 'Reward', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
+            bpLickRaster(BpodSystem.Data, [2 4], [], 'Reward', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor2);            
+            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor1], 'XLim', [startX, startX + S.nidaq.duration]);            
 
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
@@ -435,7 +437,7 @@ function lickNoLick_Odor
 %         S.GUI.Reverse = 0; % determined adaptively, do I need this?   
             
 
-            lastReverse = find(diff(BpodSystem.Data.isReverse));
+            lastReverse = find(diff(BpodSystem.Data.Epoch), 1, 'last');
             if isempty(lastReverse)
                 lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
             else
@@ -466,7 +468,7 @@ function lickNoLick_Odor
 
             BpodSystem.Data.nCorrect(end + 1) = nCorrect;
             %% update photometry raster plots, see subfunction
-            updatePhotometryRasters;
+            updatePhotometryRasters(nCorrectNeeded);
             % update outcome plot to reflect upcoming trial
             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
                 currentTrial + 1, TrialTypes, Outcomes);
@@ -485,7 +487,7 @@ function lickNoLick_Odor
     end
 end
 
-function updatePhotometryRasters
+function updatePhotometryRasters(nCorrectNeeded)
     global BpodSystem nidaq
     
     
@@ -503,7 +505,8 @@ function updatePhotometryRasters
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));
+            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
@@ -534,6 +537,7 @@ function updatePhotometryRasters
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
+            set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));            
             set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
