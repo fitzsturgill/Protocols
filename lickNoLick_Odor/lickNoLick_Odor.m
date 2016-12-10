@@ -393,12 +393,22 @@ function lickNoLick_Odor
 
             lickOutcomes = [1 0 0 1];
             noLickOutcomes = [-1 2 2 -1];
-            if S.GUI.Pavlovian || ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
-                TrialOutcome = lickOutcomes(TrialType);
-                ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes);
+            if S.GUI.Pavlovian % kludge for Pavlovian- TrialOutcome doesn't matter but set here for phRasters
+                if ismember(TrialType, [1 4]);
+                    TrialOutcome = lickOutcomes(TrialType);
+                    ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes);
+                else
+                    TrialOutcome = noLickOutcomes(TrialType);
+                    ReinforcementOutcome = strmatch(noLickOutcome, ReinforcementOutcomes);                                  
+                end            
             else
-                TrialOutcome = noLickOutcomes(TrialType);
-                ReinforcementOutcome = strmatch(noLickOutcome, ReinforcementOutcomes);                                  
+                if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
+                    TrialOutcome = lickOutcomes(TrialType);
+                    ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes);
+                else
+                    TrialOutcome = noLickOutcomes(TrialType);
+                    ReinforcementOutcome = strmatch(noLickOutcome, ReinforcementOutcomes);                                  
+                end
             end
 
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
@@ -416,9 +426,9 @@ function lickNoLick_Odor
             BpodSystem.Data.ReinforcementOutcome(end + 1) = ReinforcementOutcome; % i.e. 1: reward, 2: neutral, 3: punish
             
             % lick rasters by odor                
-            bpLickRaster(BpodSystem.Data, [1 3], [], 'Reward', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
-            bpLickRaster(BpodSystem.Data, [2 4], [], 'Reward', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor2);            
-            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor1], 'XLim', [startX, startX + S.nidaq.duration]);            
+            bpLickRaster(BpodSystem.Data, [1 3], [], 'Cue', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
+            bpLickRaster(BpodSystem.Data, [2 4], [], 'Cue', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor2);            
+            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);            
 
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
@@ -443,7 +453,7 @@ function lickNoLick_Odor
             end
             if ~S.GUI.Pavlovian && lastReverse == 1;
                 nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
-            else
+            elseif S.GUI.Pavlovian
                 nCorrectNeeded = 0;
             end
             nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1)); % count hits only
@@ -464,7 +474,7 @@ function lickNoLick_Odor
                 warning('make sure syncing to parameter gui is working!');                
                 S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
                 S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
-            else
+            elseif S.GUI.Pavlovian
                 nCorrect = 0; % irrelevent for Pavlovian
 %                 % correct computed for hit trials across last 20 trials
 %                 % in kludgy fashion nCorrect means fraction correct when punish = off currently
@@ -513,7 +523,7 @@ function updatePhotometryRasters(nCorrectNeeded)
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
             set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));            
             if nCorrectNeeded
-                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 nCorrectNeeded + 1]);
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect + 1, nCorrectNeeded + 1)]);
             else
                 set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
             end
@@ -549,7 +559,7 @@ function updatePhotometryRasters(nCorrectNeeded)
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
             set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));    
             if nCorrectNeeded
-                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 nCorrectNeeded + 1]);
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect + 1, nCorrectNeeded + 1)]);
             else
                 set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
             end            
