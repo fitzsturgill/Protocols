@@ -174,8 +174,8 @@ function lickNoLick_Odor
     
 %% lick raster plots (by odor)
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 1, 2);
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(2, 1, 2);        
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 2, 1);
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 2, 2);
 
 
 %% Define the axes matrix positions on the figure
@@ -192,7 +192,7 @@ function lickNoLick_Odor
         BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
         set(hAx, 'YDir', 'Reverse');
         BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
-        BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'm');
+        BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'Color', 'm');
     end
     
     if S.GUI.LED2_amp > 0
@@ -207,7 +207,7 @@ function lickNoLick_Odor
         BpodSystem.ProtocolFigures.phRaster.ax_ch2 = hAx;
         set(hAx, 'YDir', 'Reverse');
         BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
-        BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'm');        
+        BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'Color', 'm');        
     end    
     
 
@@ -392,6 +392,7 @@ function lickNoLick_Odor
             % determine outcome,   -1 = miss, 0 = f.a., 1 = hit, 2 = c.r.
             if S.GUI.Pavlovian
                 TrialOutcome = 1;
+                ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes); % for Pavlovian, noLickOutcome = lickOutcome        
             else
                 lickOutcomes = [1 0 0 1];
                 noLickOutcomes = [-1 2 2 -1];
@@ -447,7 +448,7 @@ function lickNoLick_Odor
                 nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
             end
             nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1)); % count hits only
-            if nCorrect == nCorrectNeeded % reverse next trial
+            if ~S.GUI.Pavlovian && nCorrect == nCorrectNeeded % reverse next trial
 %                 Determine nCorrectNeeded for next block
                 p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
                 additionalCorrectNeeded = Inf;
