@@ -444,8 +444,10 @@ function lickNoLick_Odor
             else
                 lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
             end
-            if lastReverse == 1;
+            if ~S.GUI.Pavlovian && lastReverse == 1;
                 nCorrectNeeded = S.BlockFirstReverseCorrect; % assert fixed number of correct responses for first reversal
+            else
+                nCorrectNeeded = 0;
             end
             nCorrect = length(find(BpodSystem.Data.TrialOutcome(lastReverse:end) == 1)); % count hits only
             if ~S.GUI.Pavlovian && nCorrect == nCorrectNeeded % reverse next trial
@@ -465,7 +467,12 @@ function lickNoLick_Odor
                 warning('make sure syncing to parameter gui is working!');                
                 S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
                 S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
-            end
+            else
+                % correct computed for hit trials across last 20 trials
+                % in kludgy fashion nCorrect means fraction correct when punish = off currently
+                nCorrect = length(find(BpodSystem.Data.TrialOutcome(max(end - 20, 1):end) == 1))...
+                    / length(find(ismember(BpodSystem.Data.TrialTypes(max(end - 20, 1):end), [1 4]))); 
+            end                
 
             BpodSystem.Data.nCorrect(end + 1) = nCorrect;
             %% update photometry raster plots, see subfunction
@@ -506,8 +513,12 @@ function updatePhotometryRasters(nCorrectNeeded)
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
+            set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));            
+            if nCorrectNeeded
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 nCorrectNeeded + 1]);
+            else
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
+            end
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
@@ -538,8 +549,12 @@ function updatePhotometryRasters(nCorrectNeeded)
             nTrials = size(channelData, 1);
             nSamples = size(channelData, 2);
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
-            set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));            
-            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]); 
+            set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));    
+            if nCorrectNeeded
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 nCorrectNeeded + 1]);
+            else
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
+            end            
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
             ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i + 1); % phRaster axes start at i + 1
