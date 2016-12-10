@@ -390,20 +390,17 @@ function lickNoLick_Odor
             
 
             % determine outcome,   -1 = miss, 0 = f.a., 1 = hit, 2 = c.r.
-            if S.GUI.Pavlovian
-                TrialOutcome = 1;
-                ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes); % for Pavlovian, noLickOutcome = lickOutcome        
+
+            lickOutcomes = [1 0 0 1];
+            noLickOutcomes = [-1 2 2 -1];
+            if S.GUI.Pavlovian || ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
+                TrialOutcome = lickOutcomes(TrialType);
+                ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes);
             else
-                lickOutcomes = [1 0 0 1];
-                noLickOutcomes = [-1 2 2 -1];
-                if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
-                    TrialOutcome = lickOutcomes(TrialType);
-                    ReinforcementOutcome = strmatch(lickOutcome, ReinforcementOutcomes);
-                else
-                    TrialOutcome = noLickOutcomes(TrialType);
-                    ReinforcementOutcome = strmatch(noLickOutcome, ReinforcementOutcomes);                                  
-                end
+                TrialOutcome = noLickOutcomes(TrialType);
+                ReinforcementOutcome = strmatch(noLickOutcome, ReinforcementOutcomes);                                  
             end
+
             disp(['*** Trial Outcome = ' num2str(TrialOutcome) ' ***']);
             Outcomes(currentTrial) = TrialOutcome;
             if ReinforcementOutcome == 1
@@ -468,10 +465,11 @@ function lickNoLick_Odor
                 S.GUI.Epoch = S.GUI.Epoch + 1; % increment the epoch/ block number (make sure this works with syncing to GUI!!!!)
                 S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
             else
-                % correct computed for hit trials across last 20 trials
-                % in kludgy fashion nCorrect means fraction correct when punish = off currently
-                nCorrect = length(find(BpodSystem.Data.TrialOutcome(max(end - 20, 1):end) == 1))...
-                    / length(find(ismember(BpodSystem.Data.TrialTypes(max(end - 20, 1):end), [1 4]))); 
+                nCorrect = 0; % irrelevent for Pavlovian
+%                 % correct computed for hit trials across last 20 trials
+%                 % in kludgy fashion nCorrect means fraction correct when punish = off currently
+%                 nCorrect = length(find(BpodSystem.Data.TrialOutcome(max(end - 20, 1):end) == 1))...
+%                     / length(find(ismember(BpodSystem.Data.TrialTypes(max(end - 20, 1):end), [1 4]))); 
             end                
 
             BpodSystem.Data.nCorrect(end + 1) = nCorrect;
