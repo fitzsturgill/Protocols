@@ -4,8 +4,7 @@ function lickNoLick_Odor
 % Photometry support
 
 
-% TO DO: 1) should I add ITI after start? 2s ITI? probably to allow for future expansion
-% 2)implement brown noise (house light mimic) 
+
 
     global BpodSystem
     
@@ -35,11 +34,11 @@ function lickNoLick_Odor
         S.GUI.Hit_PunishFraction = 0;
         S.GUI.FA_PunishFraction = 0;
         % parameters controling reversals
-        S.BlockFirstReverseCorrect = 5; %30; TESTING % number of correct responses necessary prior to initial reversal
+        S.BlockFirstReverseCorrect = 30;% % number of correct responses necessary prior to initial reversal
         S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
         S.BlockCountCorrect = 0; % tally of correct responses prior to a reversal
-        S.BlockMinCorrect = 2; %10; TESTING
-        S.BlockMeanAdditionalCorrect = 3; % TESTING 10;
+        S.BlockMinCorrect = 10; 
+        S.BlockMeanAdditionalCorrect = 10;
         S.BlockMaxAdditionalCorrect = S.BlockMeanAdditionalCorrect * 2;
         S.BlockAdditionalCorrect = []; % determined adaptively
 %         S.GUI.Reverse = 0; % determined adaptively, do I need this?
@@ -67,7 +66,7 @@ function lickNoLick_Odor
 
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.GUI.AnswerDelay + S.GUI.Answer + S.PostUsRecording;
-    startX = 0 - S.PreCsRecording - S.OdorTime - S.GUI.AnswerDelay; % 0 defined as time from reinforcement
+    startX = 0 - S.PreCsRecording - S.OdorTime - S.GUI.AnswerDelay - S.GUI.Answer; % 0 defined as time from reinforcement
     S = initPhotometry(S);
 
     %% Initialize Sound Stimuli
