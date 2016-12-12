@@ -123,8 +123,20 @@ function Posner_Stage3
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         R = GetValveTimes(S.GUI.RewardAmount, [1 3]); LeftValveTime = R(1); RightValveTime = R(2); % Update reward amounts
 
-    %     %% Suelynn: generate exponentially distributed reward delay but bounded by min and max specified values    
-    %     RewardDelayMin = 0;
+    %     %% exponentially distributed foreperiod duration bounded by min
+    %     and max values
+        FP_expOn = 1;
+        if FP_expOn
+            FP_bound = [0.005 0.35];
+            FP_mean = 0.15;
+            fp = inf;
+            while fp < FP_bound(1) || fp > FP_bound(2)    % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                fp = exprnd(FP_mean);
+            end            
+            S.GUI.Foreperiod = fp;
+            BpodParameterGUI('sync', S);
+            disp(['*** Foreperiod: ' num2str(S.GUI.Foreperiod)]);
+        end
     %     RewardDelayMean = 0.015; 
     %     RewardDelayMax = 0.1;
     %     S.RewardDelay = -1;
@@ -135,6 +147,8 @@ function Posner_Stage3
     %             S.RewardDelay = exprnd(RewardDelayMean);
     %         end
     %     end
+    
+    
 
         %% AJ - Bias Correction
         if S.GUI.biasMode && currentTrial > 1 && Outcomes(currentTrial - 1) == 0
