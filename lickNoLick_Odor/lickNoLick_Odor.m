@@ -46,13 +46,13 @@ function lickNoLick_Odor
 
         S.OdorTime = 1;
         S.PreCsRecording = 4;
-        S.PostUsRecording = 3;
+        S.PostUsRecording = 4;
         S.currentValve = []; % holds odor valve # for current trial
         S.RewardValveCode = 1;
         S.PunishValveCode = 2;
         S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);        
     end
-
+        S.PostUsRecording = 4;
     %% Pause and wait for user to edit parameter GUI 
     BpodParameterGUI('init', S);    
     BpodSystem.Pause = 1;
@@ -522,9 +522,9 @@ function updatePhotometryRasters(nCorrectNeeded)
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
             set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));            
             if nCorrectNeeded
-                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect + 1, nCorrectNeeded + 1)]);
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect(end) + 1, nCorrectNeeded + 1)]);
             else
-                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect(end)) + 0.1]);
             end
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
@@ -558,9 +558,9 @@ function updatePhotometryRasters(nCorrectNeeded)
             set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.nCorrect);
             set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(nCorrectNeeded, 1, nTrials));    
             if nCorrectNeeded
-                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect + 1, nCorrectNeeded + 1)]);
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect(end) + 1, nCorrectNeeded + 1)]);
             else
-                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect) + 0.1]);
+                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.nCorrect(end)) + 0.1]);
             end            
             phMean = mean(mean(channelData(:,x1:x2)));
             phStd = mean(std(channelData(:,x1:x2)));    
