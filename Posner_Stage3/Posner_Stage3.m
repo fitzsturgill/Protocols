@@ -29,6 +29,10 @@ function Posner_Stage3
         S.GUI.Cue = 0.1; 
         S.GUI.Target = 0.1;
         S.GUI.Graceperiod = 0.05;
+        
+        S.GUI.varyTargetIntensity = 0;
+        S.GUI.minTargetIntensity = 10;
+        S.GUI.maxTargetIntensity = 200;
 
         S.GUI.ITI = 2;
         S.GUI.LeftBiasFraction = 0.5; % 0.5 for even
@@ -139,7 +143,7 @@ function Posner_Stage3
             disp(['*** Foreperiod: ' num2str(S.GUI.Foreperiod)]);
         end
         
-    %% exponentially distributed trace period duration bounded by min and max values
+    %% AJ - exponentially distributed trace period duration bounded by min and max values
         TP_expOn = 1;
         if TP_expOn
             TP_bound = [0.005 0.35];
@@ -151,6 +155,11 @@ function Posner_Stage3
             S.GUI.Trace = tp;
             BpodParameterGUI('sync', S);
             disp(['*** Trace period: ' num2str(S.GUI.Trace)]);
+        end
+        
+    %% AJ - randomly selecting a target intensity
+        if varyTargetIntensity == 1
+            S.GUI.TargetIntensity = randi([S.GUI.minTargetIntensity, S.GUI.maxTargetIntensity]);
         end
     %%
     %     RewardDelayMean = 0.015; 
