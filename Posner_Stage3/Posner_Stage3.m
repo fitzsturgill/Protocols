@@ -138,6 +138,21 @@ function Posner_Stage3
             BpodParameterGUI('sync', S);
             disp(['*** Foreperiod: ' num2str(S.GUI.Foreperiod)]);
         end
+        
+    %% exponentially distributed trace period duration bounded by min and max values
+        TP_expOn = 1;
+        if TP_expOn
+            TP_bound = [0.005 0.35];
+            TP_mean = 0.15;
+            tp = inf;
+            while tp < TP_bound(1) || tp > TP_bound(2)    % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                tp = exprnd(TP_mean);
+            end            
+            S.GUI.Trace = tp;
+            BpodParameterGUI('sync', S);
+            disp(['*** Trace period: ' num2str(S.GUI.Trace)]);
+        end
+    %%
     %     RewardDelayMean = 0.015; 
     %     RewardDelayMax = 0.1;
     %     S.RewardDelay = -1;
