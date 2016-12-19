@@ -1,6 +1,7 @@
 function Posner_Stage3
 % Posner Task
 % Currently, trace, cue and target durations are NOT jittered
+% AJ's version
 
     global BpodSystem
     
