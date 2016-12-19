@@ -132,7 +132,7 @@ function Posner_Stage3
     %     and max values
         FP_expOn = 1;
         if FP_expOn
-            FP_bound = [0.005 0.35];
+            FP_bound = [0.05 0.35];
             FP_mean = 0.15;
             fp = inf;
             while fp < FP_bound(1) || fp > FP_bound(2)    % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
@@ -146,8 +146,8 @@ function Posner_Stage3
     %% AJ - exponentially distributed trace period duration bounded by min and max values
         TP_expOn = 1;
         if TP_expOn
-            TP_bound = [0.005 0.35];
-            TP_mean = 0.15;
+            TP_bound = [0.1 0.4];
+            TP_mean = 0.2;
             tp = inf;
             while tp < TP_bound(1) || tp > TP_bound(2)    % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
                 tp = exprnd(TP_mean);
@@ -158,8 +158,9 @@ function Posner_Stage3
         end
         
     %% AJ - randomly selecting a target intensity
-        if varyTargetIntensity == 1
-            S.GUI.TargetIntensity = randi([S.GUI.minTargetIntensity, S.GUI.maxTargetIntensity]);
+        if S.GUI.varyTargetIntensity == 1
+            S.GUI.TargetLightIntensity = randi([S.GUI.minTargetIntensity, S.GUI.maxTargetIntensity]);
+            disp(num2str(S.GUI.TargetLightIntensity));
         end
     %%
     %     RewardDelayMean = 0.015; 
