@@ -64,18 +64,27 @@ function lickNoLick_training_stage1
 
 %% init lick raster plot
 
+
+    lickRasterFig = ensureFigure('Licks', 1);
+    lickRasterAx = axes('Parent', lickRasterFig);
+
+%% init performance plot
     performance.fig = ensureFigure('performance', 1);
     performance.Timeout_ax = subplot(2,1,1);
-    ylabel('timeout (s)');
+
     performance.Timeout_lh = plot(NaN);
+    ylabel('timeout (s)');
 
     performance.ResponseTime_ax = subplot(2,1,2);
-    ylabel('response latency (s)');
+    
     performance.ResponseTime_lh = plot(NaN);
+    ylabel('response latency (s)');
     
 %% initialize ITIs and RTs to measure how efficiently mouse is obtaining reward
     BpodSystem.Data.Timeout = []; % time during which "house light" tone is turned on
     BpodSystem.Data.ResponseTime = []; % time from when "house light" tone is turned off to operant response (lick)
+    BpodSystem.Data.TrialTypes = ones(1, S.GUI.maxTrials);
+    BpodSystem.Data.TrialOutcome = ones(1, S.GUI.maxTrials);
 
 
 
@@ -103,7 +112,7 @@ function lickNoLick_training_stage1
         sma = AddState(sma,'Name', 'Reward', ...
             'Timer',S.RewardValveTime,... % time will be 0 for omission
             'StateChangeConditions', {'Tup', 'PostReward'},...
-            'OutputActions', {'ValveState', S.GUI.RewardValveCode, 'SoftCode', 1}); % trigger neutral tone
+            'OutputActions', {'ValveState', S.GUI.RewardValveCode}); % don't trigger neutral tone until there is a cue
         sma = AddState(sma, 'Name','PostReward',...
             'Timer', S.GUI.PostReward,... %
             'StateChangeConditions',{'Tup','exit'},...
@@ -128,11 +137,15 @@ function lickNoLick_training_stage1
             BpodSystem.Data.ResponseTime(end + 1) = diff(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForLick); 
             BpodSystem.Data.Timeout(end + 1) =...
             BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForLick(1)...        
-                - BpodSystem.Data.TrialStartTimestamp(currentTrial);
+                - BpodSystem.Data.RawEvents.Trial{currentTrial}.States.NoLick(1);
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
             % update figures
             performance.Timeout_lh.YData = smooth(BpodSystem.Data.Timeout);
-            performance.ResponseTime_lh.YData = smooth(BpodSystem.Data.ResponseTime);            
+            performance.ResponseTime_lh.YData = smooth(BpodSystem.Data.ResponseTime); 
+            
+            % raster
+            bpLickRaster(BpodSystem.Data, 1, 1, 'Reward', [], lickRasterAx);
+            set(gca, 'XLim', [-5, 2]);
         end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
