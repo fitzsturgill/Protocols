@@ -25,14 +25,17 @@ function lickNoLick_Odor
         S.GUI.Answer = 1; % answer period duration
         S.GUI.PunishValveTime = 0.2; %s        
         S.GUI.Reward = 8;
+        
+        %% variables to be incoporated in or connected to block tables:
         S.GUI.Pavlovian = 1; % pavlovian option for training
-
         S.GUI.Odor1Valve = 5;
         S.GUI.Odor2Valve = 6;
         S.GUI.Hit_RewardFraction = 0.7;
         S.GUI.FA_RewardFraction = 0.3;
         S.GUI.Hit_PunishFraction = 0;
         S.GUI.FA_PunishFraction = 0;
+        
+        
         % parameters controling reversals
         S.BlockFirstReverseCorrect = 30;% % number of correct responses necessary prior to initial reversal
         S.IsFirstReverse = 1; % are we evaluating initial reversal? % this will be saved across sessions
@@ -52,7 +55,8 @@ function lickNoLick_Odor
         S.PunishValveCode = 2;
         S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);        
     end
-        S.PostUsRecording = 4;
+    
+    
     %% Pause and wait for user to edit parameter GUI 
     BpodParameterGUI('init', S);    
     BpodSystem.Pause = 1;
