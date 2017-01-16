@@ -29,8 +29,8 @@ function lickNoLick_Odor
 
         S.GUI.Odor1Valve = 5;
         S.GUI.Odor2Valve = 6;
-        S.GUI.Hit_RewardFraction = 0.7;
-        S.GUI.FA_RewardFraction = 0.3;
+        S.GUI.Hit_RewardFraction = 0.8;
+        S.GUI.FA_RewardFraction = 0.4;
         S.GUI.Hit_PunishFraction = 0;
         S.GUI.FA_PunishFraction = 0;
         % parameters controling reversals
