@@ -4,8 +4,6 @@ function lickNoLick_Odor
 % Photometry support
 
 
-
-
     global BpodSystem
     
     
@@ -13,7 +11,7 @@ function lickNoLick_Odor
     %% Define parameters
     S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
 
-    
+     
     if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
         S.GUI.Epoch = 1;
         S.GUI.LED1_amp = 1.5;

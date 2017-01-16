@@ -22,6 +22,8 @@ function lickNoLick_Odor_v2
         'GUI.Reward', 8;...
         
         %% variables to be incoporated in or connected to block tables:
+        % do I need all these (except for block?)
+        'GUI.Block', 1;...
         'GUI.Pavlovian', 1;... % pavlovian option for training
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
@@ -63,7 +65,71 @@ function lickNoLick_Odor_v2
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
+    %% Load Tables
+    S.Tables = lickNoLick_Odor_v2_blocks;
+% Block #1
+%     P    CS       US       Instrumental
+%     _    __    ________    ____________
+% 
+%     1    1     'reward'    0           
+% 
+% 
+% Block #2
+% 
+%     P    CS       US       Instrumental
+%     _    __    ________    ____________
+% 
+%     1    1     'reward'    1           
+% 
+% 
+% Block #3
+% 
+%      P     CS       US       Instrumental
+%     ___    __    ________    ____________
+% 
+%     0.5    1     'reward'    1           
+%     0.5    2     'wnoise'    1           
+% 
+% 
+% Block #4
+% 
+%      P     CS       US       Instrumental
+%     ___    __    ________    ____________
+% 
+%     0.5    2     'reward'    0           
+%     0.5    1     'wnoise'    1           
+% 
+% 
+% Block #5
+% 
+%      P     CS       US       Instrumental
+%     ___    __    ________    ____________
+% 
+%     0.5    2     'reward'    1           
+%     0.5    1     'wnoise'    1           
+% 
+% 
+% Block #6
+% 
+%      P     CS       US       Instrumental
+%     ___    __    ________    ____________
+% 
+%     0.5    1     'reward'    0           
+%     0.5    2     'wnoise'    1           
+% 
+% 
+% Block #7
+% 
+%      P     CS       US       Instrumental
+%     ___    __    ________    ____________
+% 
+%     0.5    1     'reward'    1           
+%     0.5    2     'wnoise'    1               
+    
+    
+    
 
+    
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
     startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
@@ -123,6 +189,13 @@ function lickNoLick_Odor_v2
         case 'BNCState'
             olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
     end
+    
+    %% Main trial loop
+    for currentTrial = 1:MaxTrials
+        S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+        S.Block = S.Tables{S.GUI.Block};
+        TrialType = 
+        
 
        %% Assemble state matrix
         sma = NewStateMatrix(); 
@@ -142,7 +215,7 @@ function lickNoLick_Odor_v2
             'OutputActions', {'WireState', bitset(0, 2)}); % Sound on
         sma = AddState(sma,'Name', 'RestartNoLick', ...
             'Timer', 0,...
-            'StateChangeConditions', {'Tup', 'NoLick',},...
+            'StateChangeConditions', {'Tup', 'NoLick'},...
             'OutputActions', {}); % Sound on, to do
         sma = AddState(sma, 'Name', 'StartRecording',...
             'Timer',0.025,...
