@@ -60,6 +60,9 @@ function SO_RewardPunish_odor
         S.GUI.Delay = 1; %  time after odor and before US delivery (or omission)
         S.GUI.PunishOn = 1;
         S.PostUsRecording = 4; % After trial before exit    was 5
+        S.ToneFreq = 10000; % frequency of neutral tone signaling onset of U.S.
+        S.ToneDuration = 0.1; % duration of neutral tone
+        S.NeutralToneOn = 1; 
     end
     
     %% Pause and wait for user to edit parameter GUI - this probably won't work initially
@@ -80,6 +83,22 @@ function SO_RewardPunish_odor
     S.nidaq.duration = S.PreCsRecording + S.GUI.OdorTime + S.GUI.Delay + S.PostUsRecording;
     startX = 0 - S.PreCsRecording - S.GUI.OdorTime - S.GUI.Delay; % time from reinforcement
     S = initPhotometry(S);
+    
+    
+    
+    %% Initialize Sound Stimuli
+    SF = 192000; 
+    % linear ramp of sound for 10ms at onset and offset
+    neutralTone = taperedSineWave(SF, S.ToneFreq, S.ToneDuration, 0.01); % 10ms taper
+    PsychToolboxSoundServer('init')
+    PsychToolboxSoundServer('Load', 1, neutralTone);
+    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+    
+    if S.NeutralToneOn
+        softCode = 1;
+    else
+        softCode = 255;
+    end
     
     %% Initialize olfactometer and point grey camera
     % retrieve machine specific olfactometer settings
@@ -324,15 +343,15 @@ function SO_RewardPunish_odor
         sma = AddState(sma,'Name', 'Reward', ...
             'Timer',S.RewardValveTime,... % time will be 0 for omission
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', {'ValveState', S.RewardValveCode});
+            'OutputActions', {'ValveState', S.RewardValveCode, 'SoftCode', softCode});
         sma = AddState(sma,'Name', 'Punish', ...
             'Timer',S.GUI.PunishValveTime,... 
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', {'ValveState', S.PunishValveCode});          
+            'OutputActions', {'ValveState', S.PunishValveCode, 'SoftCode', softCode});          
         sma = AddState(sma,'Name', 'Omit', ...
             'Timer',mean([S.RewardValveTime S.GUI.PunishValveTime]),...  % split the difference
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', {'ValveState', S.OmitValveCode});     
+            'OutputActions', {'ValveState', S.OmitValveCode, 'SoftCode', softCode});     
         sma = AddState(sma, 'Name','PostUsRecording',...
             'Timer',S.PostUsRecording,...  
             'StateChangeConditions',{'Tup','exit'},...
