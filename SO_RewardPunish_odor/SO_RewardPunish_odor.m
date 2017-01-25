@@ -60,11 +60,13 @@ function SO_RewardPunish_odor
         S.GUI.Delay = 1; %  time after odor and before US delivery (or omission)
         S.GUI.PunishOn = 1;
         S.PostUsRecording = 4; % After trial before exit    was 5
+%         S.ToneFreq = 10000; % frequency of neutral tone signaling onset of U.S.
+%         S.ToneDuration = 0.1; % duration of neutral tone
+%         S.NeutralToneOn = 1; 
+    end
         S.ToneFreq = 10000; % frequency of neutral tone signaling onset of U.S.
         S.ToneDuration = 0.1; % duration of neutral tone
         S.NeutralToneOn = 1; 
-    end
-    
     %% Pause and wait for user to edit parameter GUI - this probably won't work initially
     
     BpodParameterGUI('init', S);    
