@@ -194,7 +194,7 @@ function lickNoLick_Odor_v2
     for currentTrial = 1:MaxTrials
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         S.Block = S.Tables{S.GUI.Block};
-        TrialType = 
+        TrialType = defineRandomizedTrials(chooseHitOutcome, 1);
         
 
        %% Assemble state matrix
