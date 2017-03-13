@@ -20,6 +20,7 @@ function lickNoLick_Odor_v2
         'GUI.Answer', 1;... % answer period duration
         'GUI.PunishValveTime', 0.2;... %s        
         'GUI.Reward', 8;...
+        'GUI.PhotometryOn', 1;...
         
         %% variables to be incoporated in or connected to block tables:
         % do I need all these (except for block?)
@@ -131,10 +132,11 @@ function lickNoLick_Odor_v2
 
     
     %% Initialize NIDAQ
-    S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
-    startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
-    S = initPhotometry(S);
-
+    if S.GUI.PhotometryOn
+        S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
+        startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
+        S = initPhotometry(S);
+    end
     %% Initialize Sound Stimuli
     SF = 192000; 
     
@@ -189,14 +191,63 @@ function lickNoLick_Odor_v2
         case 'BNCState'
             olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
     end
+    %% initialize trial types and outcomes
+    MaxTrials = 1000;
+
+
+
+    Outcomes = []; % NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
+    ReinforcementOutcome = []; % local version of BposSystem.Data.ReinforcementOutcome
+    
+    BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
+    BpodSystem.Data.TrialOutcome = []; % onlineFilterTrials dependent on this variable
+    BpodSystem.Data.ReinforcementOutcome = []; % i.e. reward, punish or neutral
+    BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
+    BpodSystem.Data.OdorValve = [];
+    BpodSystem.Data.Epoch = [];% onlineFilterTrials dependent on this variable
+    BpodSystem.Data.BlockNumber = [];
+    
+    lickOutcome = '';
+    noLickOutcome = '';    
+    lickAction = '';
     
     %% Main trial loop
     for currentTrial = 1:MaxTrials
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         S.Block = S.Tables{S.GUI.Block};
-        TrialType = defineRandomizedTrials(chooseHitOutcome, 1);
+        TrialType = pickRandomTrials_blocks(S.Block);
+        OdorValve = S.Block.CS(TrialType);
         
-
+        lickOutcome = S.Block.US(TrialType);
+        if ~S.Block.Instrumental
+            noLickOutcome = S.Block.US(TrialType);
+        else
+            noLickOutcome = 'neutral';
+        end
+        
+        %% update odor valve number for current trial
+        slaveResponse = updateValveSlave(valveSlave, OdorValve); 
+        S.currentValve = slaveResponse;
+        if isempty(slaveResponse);
+            disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
+            continue
+        else
+            disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+        end
+        disp(['*** Trial Type = ' num2str(TrialType) ' ***']);
+        %% Expotentially distributed ITIs
+        if S.GUI.mu_iti
+            S.GUI.ITI = inf;
+            while S.GUI.ITI > 3 * S.GUI.mu_iti   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                S.GUI.ITI = exprnd(S.GUI.mu_iti);
+            end        
+        end
+        %% TO DO
+        % setup global counter to track number of licks during answer
+        % period
+        
+        BpodSystem.Data.Settings = S; % SAVE SETTINGS, USED BY UPDATEPHOTOMETRYRASTERS SUBFUNCTION CURRENTLY, but redundant with trialSettings        
+        
        %% Assemble state matrix
         sma = NewStateMatrix(); 
         sma = SetGlobalTimer(sma,1,S.GUI.Answer); % post cue   
@@ -269,3 +320,78 @@ function lickNoLick_Odor_v2
             'Timer',0,...  
             'StateChangeConditions',{'GlobalTimer2_End','exit'},...
             'OutputActions',{});    
+        
+        
+        %%
+        SendStateMatrix(sma);
+
+        %% prep data acquisition
+        if S.GUI.PhotometryOn
+            preparePhotometryAcq(S);
+        end
+        %% Run state matrix
+        RawEvents = RunStateMatrix();  % Blocking!
+        
+        %% Stop Photometry session
+        if S.GUI.PhotometryOn
+            stopPhotometryAcq;   
+        end
+        
+        if ~isempty(fieldnames(RawEvents)) % If trial data was returned
+            %% Process NIDAQ session
+            if S.GUI.PhotometryOn            
+                processPhotometryAcq(currentTrial);
+            %% online plotting
+                processPhotometryOnline(currentTrial);
+                updatePhotometryPlot(startX);         
+            end
+            %% collect and save data
+            BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
+            BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)        
+            
+            %TrialOutcome -> NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
+            if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
+                lickAction = 'lick';
+                ReinforcementOutcome = lickOutcome;                
+                if strcmp(ReinforcementOutcome, 'Reward')
+                    TrialOutcome = 1; % hit
+                else
+                    TrialOutcome = 0; % false alarm
+                end
+            else
+                lickAction = 'nolick';
+                ReinforcementOutcome = noLickOutcome;
+                if strcmp(lickOutcome, 'reward')
+                    TrialOutcome = -1; % miss
+                else
+                    TrialOutcome = 2; % correct rejection
+                end                
+            end
+
+            BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
+            BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
+            BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
+            BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
+            BpodSystem.Data.ReinforcementOutcome{end + 1} = ReinforcementOutcome; % i.e. 1: reward, 2: neutral, 3: punish
+            BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
+            BpodSystem.Data.LickAction{end + 1} = lickAction;
+            
+            if strcmp(ReinforcementOutcome, 'reward')
+                TotalRewardDisplay('add', S.GUI.Reward);
+            end            
+            
+            
+            %% save data
+            SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+        else
+            disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
+        end
+        
+        HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+        if BpodSystem.BeingUsed == 0
+            fclose(valveSlave);
+            delete(valveSlave);
+            return
+        end 
+    end
+            
