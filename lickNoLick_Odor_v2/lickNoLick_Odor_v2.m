@@ -40,7 +40,7 @@ function lickNoLick_Odor_v2
         'BlockCountCorrect', 0;... % tally of correct responses prior to a reversal
         'BlockMinCorrect', 10;... 
         'BlockMeanAdditionalCorrect', 10;...
-        'BlockMaxAdditionalCorrect', BlockMeanAdditionalCorrect * 2;...
+        'BlockMaxAdditionalCorrect', 20;...
         'BlockAdditionalCorrect', [];... % determined adaptively
 %         'GUI.Reverse', 0;... % determined adaptively, do I need this?
 
@@ -51,7 +51,7 @@ function lickNoLick_Odor_v2
         'currentValve', [];... % holds odor valve # for current trial
         'RewardValveCode', 1;...
         'PunishValveCode', 2;...
-        'RewardValveTime', GetValveTimes(GUI.Reward, RewardValveCode);...
+        'RewardValveTime', [];...
         };
     
     S = setBpodDefaultSettings(S, defaults);
@@ -66,6 +66,7 @@ function lickNoLick_Odor_v2
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
+    S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
     %% Load Tables
     S.Tables = lickNoLick_Odor_v2_blocks;
 % Block #1
@@ -132,64 +133,70 @@ function lickNoLick_Odor_v2
 
     
     %% Initialize NIDAQ
-    if S.GUI.PhotometryOn
-        S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
-        startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
+    S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
+    startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
     end
     %% Initialize Sound Stimuli
-    SF = 192000; 
-    
-    % linear ramp of sound for 10ms at onset and offset
-    neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
-    PsychToolboxSoundServer('init')
-    PsychToolboxSoundServer('Load', 1, neutralTone);
-    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
-    
-    %% Generate white noise (I want to make this brown noise eventually)
     if ~BpodSystem.EmulatorMode
+        SF = 192000;
+
+        % linear ramp of sound for 10ms at onset and offset
+        neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
+        PsychToolboxSoundServer('init')
+        PsychToolboxSoundServer('Load', 1, neutralTone);
+        BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+
+    %% Generate white noise (I want to make this brown noise eventually)
+
         load('PulsePalParamFeedback.mat');
         ProgramPulsePal(PulsePalParamFeedback);        
         maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
         nPulses = 1000;
         SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
         SendCustomWaveform(2, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %        
-    end
+
     
-    %% Initialize olfactometer and point grey camera
-    % retrieve machine specific olfactometer settings
-    addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
-    olfSettings = machineSpecific_Olfactometer;
-    rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict
+        %% Initialize olfactometer and point grey camera
+        % retrieve machine specific olfactometer settings
+        addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
+        olfSettings = machineSpecific_Olfactometer;
+        rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict
 
-    % retrieve machine specific point grey camera settings
-    addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
-    pgSettings = machineSpecific_pointGrey;
-    rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict    
+        % retrieve machine specific point grey camera settings
+        addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
+        pgSettings = machineSpecific_pointGrey;
+        rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict    
 
-    % initialize olfactometer slave arduino
-    valveSlave = initValveSlave(olfSettings.portName);
-    if isempty(valveSlave)
-        BpodSystem.BeingUsed = 0;
-        error('*** Failure to initialize valve slave ***');
-    end    
+        % initialize olfactometer slave arduino
+        valveSlave = initValveSlave(olfSettings.portName);
+        if isempty(valveSlave)
+            BpodSystem.BeingUsed = 0;
+            error('*** Failure to initialize valve slave ***');
+        end
+    end
 
     % determine nidaq/point grey and olfactometer triggering arguments
     npgWireArg = 0;
     npgBNCArg = 1; % BNC 1 source to trigger Nidaq is hard coded
-    switch pgSettings.triggerType
-        case 'WireState'
-            npgWireArg = bitset(npgWireArg, pgSettings.triggerNumber); % its a wire trigger
-        case 'BNCState'
-            npgBNCArg = bitset(npgBNCArg, pgSettings.triggerNumber); % its a BNC trigger
-    end
     olfWireArg = 0;
     olfBNCArg = 0;
-    switch olfSettings.triggerType
-        case 'WireState'
-            olfWireArg = bitset(olfWireArg, olfSettings.triggerNumber);
-        case 'BNCState'
-            olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
+    if ~BpodSystem.EmulatorMode
+        switch pgSettings.triggerType
+            case 'WireState'
+                npgWireArg = bitset(npgWireArg, pgSettings.triggerNumber); % its a wire trigger
+            case 'BNCState'
+                npgBNCArg = bitset(npgBNCArg, pgSettings.triggerNumber); % its a BNC trigger
+        end
+        olfWireArg = 0;
+        olfBNCArg = 0;
+        switch olfSettings.triggerType
+            case 'WireState'
+                olfWireArg = bitset(olfWireArg, olfSettings.triggerNumber);
+            case 'BNCState'
+                olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
+        end
     end
     %% initialize trial types and outcomes
     MaxTrials = 1000;
@@ -220,19 +227,21 @@ function lickNoLick_Odor_v2
         
         lickOutcome = S.Block.US(TrialType);
         if ~S.Block.Instrumental
-            noLickOutcome = S.Block.US(TrialType);
+            noLickOutcome = S.Block.US{TrialType};
         else
             noLickOutcome = 'neutral';
         end
         
         %% update odor valve number for current trial
-        slaveResponse = updateValveSlave(valveSlave, OdorValve); 
-        S.currentValve = slaveResponse;
-        if isempty(slaveResponse);
-            disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
-            continue
-        else
-            disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+        if ~BpodSystem.EmulatorMode
+            slaveResponse = updateValveSlave(valveSlave, OdorValve); 
+            S.currentValve = slaveResponse;
+            if isempty(slaveResponse);
+                disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
+                continue
+            else
+                disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+            end
         end
         disp(['*** Trial Type = ' num2str(TrialType) ' ***']);
         %% Expotentially distributed ITIs
@@ -326,20 +335,20 @@ function lickNoLick_Odor_v2
         SendStateMatrix(sma);
 
         %% prep data acquisition
-        if S.GUI.PhotometryOn
+        if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             preparePhotometryAcq(S);
         end
         %% Run state matrix
         RawEvents = RunStateMatrix();  % Blocking!
         
         %% Stop Photometry session
-        if S.GUI.PhotometryOn
+        if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             stopPhotometryAcq;   
         end
         
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
             %% Process NIDAQ session
-            if S.GUI.PhotometryOn            
+            if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode            
                 processPhotometryAcq(currentTrial);
             %% online plotting
                 processPhotometryOnline(currentTrial);
@@ -389,8 +398,10 @@ function lickNoLick_Odor_v2
         
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
-            fclose(valveSlave);
-            delete(valveSlave);
+            if ~BpodSystem.EmulatorMode
+                fclose(valveSlave);
+                delete(valveSlave);
+            end
             return
         end 
     end

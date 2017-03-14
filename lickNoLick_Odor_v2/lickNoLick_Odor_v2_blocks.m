@@ -6,7 +6,7 @@ blocks = {};
 S = struct();
 S.P = 1;
 S.CS = 1; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'};   % reward
+S.US = {'Reward'};   % Reward
 S.Instrumental = 0;
 
 blocks{end + 1} = struct2table(S);
@@ -15,7 +15,7 @@ blocks{end + 1} = struct2table(S);
 S = struct();
 S.P = 1;
 S.CS = 1; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'};   % reward
+S.US = {'Reward'};   % Reward
 S.Instrumental = 1;
 
 blocks{end + 1} = struct2table(S);
@@ -25,7 +25,7 @@ blocks{end + 1} = struct2table(S);
 S = struct();
 S.P = [0.5; 0.5];
 S.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'; 'wnoise'};   % reward
+S.US = {'Reward'; 'wnoise'};   % Reward
 S.Instrumental = [1; 1];
 
 
@@ -35,7 +35,7 @@ blocks{end + 1} = struct2table(S);
 S = struct();
 S.P = [0.5; 0.5];
 S.CS = [2; 1]; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'; 'wnoise'};   % reward
+S.US = {'Reward'; 'wnoise'};   % Reward
 S.Instrumental = [0; 1];
 
 
@@ -45,7 +45,7 @@ blocks{end + 1} = struct2table(S);
 S = struct();
 S.P = [0.5; 0.5];
 S.CS = [2; 1]; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'; 'wnoise'};   % reward
+S.US = {'Reward'; 'wnoise'};   % Reward
 S.Instrumental = [1; 1];
 
 
@@ -55,7 +55,7 @@ blocks{end + 1} = struct2table(S);
 S = struct();
 S.P = [0.5; 0.5];
 S.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'; 'wnoise'};   % reward
+S.US = {'Reward'; 'wnoise'};   % Reward
 S.Instrumental = [0; 1];
 
 
@@ -65,7 +65,7 @@ blocks{end + 1} = struct2table(S);
 S = struct();
 S.P = [0.5; 0.5];
 S.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
-S.US = {'reward'; 'wnoise'};   % reward
+S.US = {'Reward'; 'wnoise'};   % Reward
 S.Instrumental = [1; 1];
 
 
