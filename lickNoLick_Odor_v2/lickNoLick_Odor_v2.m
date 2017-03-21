@@ -146,9 +146,16 @@ function lickNoLick_Odor_v2
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
+        
+        % white noise for punishment
+        wn_duration = 1;
+        wn_amplitude = 2;
+        whiteNoise = (rand(1, wn_duration * SF) - 0.5) * wn_amplitude;
+        PsychToolboxSoundServer('Load', 2, whiteNoise);
         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
 
-    %% Generate white noise (I want to make this brown noise eventually)
+    %% Generate feedback white noise
+        
 
         load('PulsePalParamFeedback.mat');
         ProgramPulsePal(PulsePalParamFeedback);        
@@ -225,11 +232,11 @@ function lickNoLick_Odor_v2
         TrialType = pickRandomTrials_blocks(S.Block);
         OdorValve = S.Block.CS(TrialType);
         
-        lickOutcome = S.Block.US(TrialType);
+        lickOutcome = S.Block.US{TrialType};
         if ~S.Block.Instrumental
             noLickOutcome = S.Block.US{TrialType};
         else
-            noLickOutcome = 'neutral';
+            noLickOutcome = 'Neutral';
         end
         
         %% update odor valve number for current trial
@@ -264,7 +271,7 @@ function lickNoLick_Odor_v2
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'ITI'},...
-            'OutputActions', {'GlobalTimerTrig', 2}); % trigger photometry acq global timer
+            'OutputActions', {}); 
         sma = AddState(sma,'Name', 'ITI', ...
             'Timer', S.GUI.ITI,...
             'StateChangeConditions', {'Tup', 'NoLick'},...
@@ -280,7 +287,7 @@ function lickNoLick_Odor_v2
         sma = AddState(sma, 'Name', 'StartRecording',...
             'Timer',0.025,...
             'StateChangeConditions', {'Tup', 'PreCsRecording'},...
-            'OutputActions', {'BNCState', npgBNCArg, 'WireState', npgWireArg});
+            'OutputActions', {'GlobalTimerTrig', 2, 'BNCState', npgBNCArg, 'WireState', npgWireArg}); % trigger photometry acq global timer, nidaq trigger, point grey camera
         sma = AddState(sma, 'Name','PreCsRecording',...
             'Timer',S.PreCsRecording,...
             'StateChangeConditions',{'Tup','Cue'},...
@@ -313,7 +320,7 @@ function lickNoLick_Odor_v2
             'Timer', 0,...
             'StateChangeConditions', {'Tup', lickOutcome},...
             'OutputActions', {});      
-        sma = AddState(sma,'Name', 'Reward', ...
+        sma = AddState(sma,'Name', 'Reward', ... % 4 possible outcome states: Reward (H2O + tone), Punish (air puff + tone), WNoise (white noise), Neutral (tone)
             'Timer', S.RewardValveTime,... %
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
             'OutputActions', {'ValveState', S.RewardValveCode, 'SoftCode', 1});
@@ -321,6 +328,10 @@ function lickNoLick_Odor_v2
             'Timer', S.GUI.PunishValveTime,... %
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
             'OutputActions', {'ValveState', S.PunishValveCode, 'SoftCode', 1});
+        sma = AddState(sma,'Name', 'WNoise', ...
+            'Timer', 0,... %
+            'StateChangeConditions', {'Tup', 'PostUsRecording'},...
+            'OutputActions', {'SoftCode', 2});        
         sma = AddState(sma,'Name', 'Neutral', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
@@ -370,7 +381,7 @@ function lickNoLick_Odor_v2
             else
                 lickAction = 'nolick';
                 ReinforcementOutcome = noLickOutcome;
-                if strcmp(lickOutcome, 'reward')
+                if strcmp(lickOutcome, 'Reward')
                     TrialOutcome = -1; % miss
                 else
                     TrialOutcome = 2; % correct rejection
