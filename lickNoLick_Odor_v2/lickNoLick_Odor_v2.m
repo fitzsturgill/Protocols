@@ -233,7 +233,7 @@ function lickNoLick_Odor_v2
         OdorValve = S.Block.CS(TrialType);
         
         lickOutcome = S.Block.US{TrialType};
-        if ~S.Block.Instrumental
+        if ~S.Block.Instrumental(TrialType)
             noLickOutcome = S.Block.US{TrialType};
         else
             noLickOutcome = 'Neutral';
@@ -250,7 +250,7 @@ function lickNoLick_Odor_v2
                 disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
             end
         end
-        disp(['*** Trial Type = ' num2str(TrialType) ' ***']);
+        disp(['*** Trial Type = ' num2str(TrialType) ' Block = ' num2str(S.GUI.Block) ' ***']);
         %% Expotentially distributed ITIs
         if S.GUI.mu_iti
             S.GUI.ITI = inf;
