@@ -28,10 +28,10 @@ function lickNoLick_Odor_v2
         'GUI.Pavlovian', 1;... % pavlovian option for training
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
-        'GUI.Hit_RewardFraction', 0.7;...
-        'GUI.FA_RewardFraction', 0.3;...
-        'GUI.Hit_PunishFraction', 0;...
-        'GUI.FA_PunishFraction', 0;...
+%         'GUI.Hit_RewardFraction', 0.7;...
+%         'GUI.FA_RewardFraction', 0.3;...
+%         'GUI.Hit_PunishFraction', 0;...
+%         'GUI.FA_PunishFraction', 0;...
         
         
         % parameters controling reversals
@@ -229,12 +229,12 @@ function lickNoLick_Odor_v2
     for currentTrial = 1:MaxTrials
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         S.Block = S.Tables{S.GUI.Block};
-        TrialType = pickRandomTrials_blocks(S.Block);
-        OdorValve = S.Block.CS(TrialType);
+        TrialType = pickRandomTrials_blocks(S.Block.Table);
+        OdorValve = S.Block.Table.CS(TrialType);
         
-        lickOutcome = S.Block.US{TrialType};
-        if ~S.Block.Instrumental(TrialType)
-            noLickOutcome = S.Block.US{TrialType};
+        lickOutcome = S.Block.Table.US{TrialType};
+        if ~S.Block.Table.Instrumental(TrialType)
+            noLickOutcome = S.Block.Table.US{TrialType};
         else
             noLickOutcome = 'Neutral';
         end
@@ -398,7 +398,16 @@ function lickNoLick_Odor_v2
             
             if strcmp(ReinforcementOutcome, 'reward')
                 TotalRewardDisplay('add', S.GUI.Reward);
-            end            
+            end
+            
+            %% adaptive block transitions
+            if S.Block.LinkTo
+                switchFcn = str2func(S.Block.LinkToFcn);
+                S.GUI.Block = switchFcn(BpodSystem.Data.TrialOutcome, BpodSystem.Data.BlockNumber, S);
+                S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+            end
+            
+            
             
             
             %% save data
