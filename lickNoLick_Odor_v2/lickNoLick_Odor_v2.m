@@ -34,15 +34,21 @@ function lickNoLick_Odor_v2
 %         'GUI.FA_PunishFraction', 0;...
         
         
-        % parameters controling reversals
+        % parameters for adaptive reversals 
+        
+        % number correct dictates reversal, LinkToFcn =
+        % blockSwitchFunction_nCorrect
         'BlockFirstReverseCorrect', 30;...% % number of correct responses necessary prior to initial reversal
-        'IsFirstReverse', 1;... % are we evaluating initial reversal? % this will be saved across sessions
         'BlockCountCorrect', 0;... % tally of correct responses prior to a reversal
         'BlockMinCorrect', 10;... 
         'BlockMeanAdditionalCorrect', 10;...
         'BlockMaxAdditionalCorrect', 20;...
         'BlockAdditionalCorrect', [];... % determined adaptively
-%         'GUI.Reverse', 0;... % determined adaptively, do I need this?
+        
+        % fraction correct dictates reversal, LinkToFcn =
+        % blockSwitchFunction_fractionCorrect
+        'BlockMinFractionCorrect', 80;...
+        'BlockFractionCorrectMinTrials', 20;...
 
 
         'OdorTime', 1;...
