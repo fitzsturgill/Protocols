@@ -22,10 +22,8 @@ function lickNoLick_Odor_v2
         'GUI.Reward', 8;...
         'GUI.PhotometryOn', 1;...
         
-        %% variables to be incoporated in or connected to block tables:
-        % do I need all these (except for block?)
+        'GUI.BlockFcn', 'lickNoLick_Odor_v2_blocks';...
         'GUI.Block', 1;...
-        'GUI.Pavlovian', 1;... % pavlovian option for training
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
 %         'GUI.Hit_RewardFraction', 0.7;...
@@ -35,20 +33,21 @@ function lickNoLick_Odor_v2
         
         
         % parameters for adaptive reversals 
+
+        % common across LinkTo functions
+        'performanceTally', [];... % tally of parameter controlling reversals, plotted online
+        'reversalCriterion', [];... % criterion for reversal, plotted online
         
         % number correct dictates reversal, LinkToFcn =
         % blockSwitchFunction_nCorrect
-        'BlockFirstReverseCorrect', 30;...% % number of correct responses necessary prior to initial reversal
-        'BlockCountCorrect', 0;... % tally of correct responses prior to a reversal
-        'BlockMinCorrect', 10;... 
-        'BlockMeanAdditionalCorrect', 10;...
-        'BlockMaxAdditionalCorrect', 20;...
-        'BlockAdditionalCorrect', [];... % determined adaptively
+        'SwFcn_nC_MinCorrect', 10;... 
+        'SwFcn_nC_MeanAdditionalCorrect', 10;...
+        'SwFcn_nC_MaxAdditionalCorrect', 20;...
         
-        % fraction correct dictates reversal, LinkToFcn =
-        % blockSwitchFunction_fractionCorrect
-        'BlockMinFractionCorrect', 80;...
-        'BlockFractionCorrectMinTrials', 20;...
+        % response rate difference dictates reversal, LinkToFcn =
+        % blockSwitchFunction_responseRateDifference
+        'SwFcn_BlockRRD_minDiff', 0.5;...
+        'SwFcn_BlockRRD_minTrials', 20;...
 
 
         'OdorTime', 1;...
@@ -74,7 +73,12 @@ function lickNoLick_Odor_v2
 
     S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
     %% Load Tables
-    S.Tables = lickNoLick_Odor_v2_blocks;
+    bfh = str2func(GUI.BlockFcn);
+    try
+        S.Tables = bfh();
+    catch
+        error('block function not correctly specified');
+    end
 % Block #1
 %     P    CS       US       Instrumental
 %     _    __    ________    ____________
@@ -228,7 +232,7 @@ function lickNoLick_Odor_v2
     BpodSystem.Data.BlockNumber = [];
     
     lickOutcome = '';
-    noLickOutcome = '';    
+    noLickOutcome = '';
     lickAction = '';
     
     %% Main trial loop

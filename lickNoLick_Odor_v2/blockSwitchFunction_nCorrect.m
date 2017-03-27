@@ -1,16 +1,17 @@
-function [nextBlock, nCorrect] = blockSwitchFunction_nCorrect(outcomes, blockNumbers, S)
+function [nextBlock, nCorrect, criterion] = blockSwitchFunction_nCorrect(outcomes, blockNumbers, S)
 % outcomes-  vector of outcomes (1xnTrials)
 % blockNubers-  vector of blockNumbers (1xnTrials)
 % S- settings for 
 %% adaptive code or function to determine if a reversal is necessary 
-%         % parameters controling reversals
-%         S.BlockFirstReverseCorrect = 30; % number of correct responses necessary prior to initial reversal
-%         S.BlockCountCorrect = 0; % tally of correct responses prior to a reversal
-%         S.BlockMinCorrect = 10;
-%         S.BlockMeanAdditionalCorrect = 10;
-%         S.BlockMaxAdditionalCorrect = S.BlockMeanAdditionalCorrect * 2;
-%         S.BlockAdditionalCorrect = []; % determined adaptively
-%         S.GUI.Reverse = 0; % determined adaptively, do I need this?   
+        % common across LinkTo functions
+%         'performanceTally', [];... % tally of parameter controlling reversals
+%         'reversalCriterion', [];... % criterion for reversal
+%         
+%         % number correct dictates reversal, LinkToFcn =
+%         % blockSwitchFunction_nCorrect
+%         'SwFcn_nC_MinCorrect', 10;... 
+%         'SwFcn_nC_MeanAdditionalCorrect', 10;...
+%         'SwFcn_nC_MaxAdditionalCorrect', 20;...
             
         nextBlock = 0;
         lastReverse = find(diff(blockNumbers), 1, 'last');
@@ -25,16 +26,18 @@ function [nextBlock, nCorrect] = blockSwitchFunction_nCorrect(outcomes, blockNum
     %                 Determine nCorrectNeeded for this trial (doesn't really matter
     %                 that I calculate this for every trial, regardless of
     %                 whether a reversal is to occur)
-        p = 1/(S.BlockMeanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
+        p = 1/(S.SwFcn_nC_meanAdditionalCorrect + 1); % for geometric distribution, mean = (1-p) / p
         additionalCorrectNeeded = Inf;
-        while additionalCorrectNeeded > S.BlockMaxAdditionalCorrect
+        while additionalCorrectNeeded > S.SwFcn_nC_MaxAdditionalCorrect
             additionalCorrectNeeded = geornd(p); % geometric distribution with probability = p of success on each trial
         end
-        nCorrectNeeded = S.BlockMinCorrect + additionalCorrectNeeded;
+        nCorrectNeeded = S.SwFcn_nC_MinCorrect + additionalCorrectNeeded;
 
         if nCorrect == nCorrectNeeded
             nextBlock = S.block.LinkTo;
         end
+        
+        criterion = nCorrectNeeded;
 
                 
                 

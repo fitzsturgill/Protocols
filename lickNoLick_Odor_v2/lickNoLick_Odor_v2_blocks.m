@@ -90,7 +90,7 @@ ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [1; 1];
 S.Table = struct2table(ST);
 S.LinkTo = 8;
-S.LinkToFcn = '';
+S.LinkToFcn = 'blockSwitchFunction_responseRateDifference';
 
 blocks{end + 1} = S;
 
@@ -103,7 +103,7 @@ ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [1; 1];
 S.Table = struct2table(ST);
 S.LinkTo = 7;
-S.LinkToFcn = '';
+S.LinkToFcn = 'blockSwitchFunction_responseRateDifference';
 
 blocks{end + 1} = S;
 
