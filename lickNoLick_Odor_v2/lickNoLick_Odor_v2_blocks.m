@@ -20,6 +20,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = 2; % fluff
 ST.P = 1;
 ST.CS = 1; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = 1; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'};   % Reward
 ST.Instrumental = 1;
 S.Table = struct2table(ST);
@@ -34,6 +35,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = [3; 3]; % fluff
 ST.P = [0.5; 0.5];
 ST.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = [1 0]; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [1; 1];
 S.Table = struct2table(ST);
@@ -47,6 +49,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = [4; 4]; % fluff
 ST.P = [0.5; 0.5];
 ST.CS = [2; 1]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = [1 0]; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [0; 1];
 S.Table = struct2table(ST);
@@ -60,6 +63,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = [5; 5]; % fluff
 ST.P = [0.5; 0.5];
 ST.CS = [2; 1]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = [1 0]; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [1; 1];
 S.LinkTo = 0;
@@ -72,6 +76,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = [6; 6]; % fluff
 ST.P = [0.5; 0.5];
 ST.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = [1 0]; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [0; 1];
 S.Table = struct2table(ST);
@@ -86,6 +91,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = [7; 7]; % fluff
 ST.P = [0.5; 0.5];
 ST.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = [1 0]; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [1; 1];
 S.Table = struct2table(ST);
@@ -99,6 +105,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = [8; 8]; % fluff
 ST.P = [0.5; 0.5];
 ST.CS = [2; 1]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = = [1 0]; % whether CS is considered CS+ and licks are counted as "hits"
 ST.US = {'Reward'; 'WNoise'};   % Reward
 ST.Instrumental = [1; 1];
 S.Table = struct2table(ST);

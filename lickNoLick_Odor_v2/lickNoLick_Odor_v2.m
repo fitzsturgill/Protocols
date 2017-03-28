@@ -225,10 +225,11 @@ function lickNoLick_Odor_v2
     
     BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.TrialOutcome = []; % onlineFilterTrials dependent on this variable
+    BpodSystem.Data.CSValence = []; % 1 = CS+, 0 = CS-
     BpodSystem.Data.ReinforcementOutcome = []; % i.e. reward, punish or neutral
     BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
     BpodSystem.Data.OdorValve = [];
-    BpodSystem.Data.Epoch = [];% onlineFilterTrials dependent on this variable
+    BpodSystem.Data.Epoch = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.BlockNumber = [];
     
     lickOutcome = '';
@@ -382,8 +383,8 @@ function lickNoLick_Odor_v2
             %TrialOutcome -> NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
             if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
                 lickAction = 'lick';
-                ReinforcementOutcome = lickOutcome;                
-                if strcmp(ReinforcementOutcome, 'Reward')
+                ReinforcementOutcome = lickOutcome;               
+                if S.Block.Table.CSValence{TrialType} % 1 = CS+, 0 = CS-
                     TrialOutcome = 1; % hit
                 else
                     TrialOutcome = 0; % false alarm
@@ -391,7 +392,7 @@ function lickNoLick_Odor_v2
             else
                 lickAction = 'nolick';
                 ReinforcementOutcome = noLickOutcome;
-                if strcmp(lickOutcome, 'Reward')
+                if S.Block.Table.CSValence{TrialType} % 1 = CS+, 0 = CS-
                     TrialOutcome = -1; % miss
                 else
                     TrialOutcome = 2; % correct rejection
@@ -401,6 +402,7 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
             BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
             BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
+            BpodSystem.Data.CSValence(end + 1) = S.Block.Table.CSValence{TrialType};% 1 = CS+, 0 = CS-
             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             BpodSystem.Data.ReinforcementOutcome{end + 1} = ReinforcementOutcome; % i.e. 1: reward, 2: neutral, 3: punish
             BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
