@@ -77,76 +77,17 @@ function lickNoLick_Odor_v2
     try
         S.Tables = bfh();
     catch
-        error('block function not correctly specified');
+        error('** block function not correctly specified ***');
     end
-% Block #1
-%     P    CS       US       Instrumental
-%     _    __    ________    ____________
-% 
-%     1    1     'reward'    0           
-% 
-% 
-% Block #2
-% 
-%     P    CS       US       Instrumental
-%     _    __    ________    ____________
-% 
-%     1    1     'reward'    1           
-% 
-% 
-% Block #3
-% 
-%      P     CS       US       Instrumental
-%     ___    __    ________    ____________
-% 
-%     0.5    1     'reward'    1           
-%     0.5    2     'wnoise'    1           
-% 
-% 
-% Block #4
-% 
-%      P     CS       US       Instrumental
-%     ___    __    ________    ____________
-% 
-%     0.5    2     'reward'    0           
-%     0.5    1     'wnoise'    1           
-% 
-% 
-% Block #5
-% 
-%      P     CS       US       Instrumental
-%     ___    __    ________    ____________
-% 
-%     0.5    2     'reward'    1           
-%     0.5    1     'wnoise'    1           
-% 
-% 
-% Block #6
-% 
-%      P     CS       US       Instrumental
-%     ___    __    ________    ____________
-% 
-%     0.5    1     'reward'    0           
-%     0.5    2     'wnoise'    1           
-% 
-% 
-% Block #7
-% 
-%      P     CS       US       Instrumental
-%     ___    __    ________    ____________
-% 
-%     0.5    1     'reward'    1           
-%     0.5    2     'wnoise'    1               
-    
-    
-    
-
     
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
     startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
+    end
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+        lickNoLick_Odor_PhotometryRasters('Init', 'baselinePeriod', [1 S.PreCsRecording])
     end
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
@@ -226,11 +167,13 @@ function lickNoLick_Odor_v2
     BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.TrialOutcome = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.CSValence = []; % 1 = CS+, 0 = CS-
-    BpodSystem.Data.ReinforcementOutcome = []; % i.e. reward, punish or neutral
+    BpodSystem.Data.ReinforcementOutcome = []; % i.e. Reward, Punish, WNoise, or Neutral
     BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
-    BpodSystem.Data.OdorValve = [];
+    BpodSystem.Data.OdorValve = []; % e.g. 1st odor = V5, or V6
+    BpodSystem.Data.OdorValveIndex = []; % 1st odor, 2nd odor
     BpodSystem.Data.Epoch = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.BlockNumber = [];
+    BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -241,7 +184,14 @@ function lickNoLick_Odor_v2
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         S.Block = S.Tables{S.GUI.Block};
         TrialType = pickRandomTrials_blocks(S.Block.Table);
-        OdorValve = S.Block.Table.CS(TrialType);
+        switch S.Block.Table.CS(TrialType) 
+            case 1
+                OdorValve = S.GUI.Odor1Valve;
+            case 2
+                OdorValve = S.GUI.Odor2Valve;
+            case 3
+                OdorValve = S.GUI.Odor3Valve;
+        end
         
         lickOutcome = S.Block.Table.US{TrialType};
         if ~S.Block.Table.Instrumental(TrialType)
@@ -384,7 +334,7 @@ function lickNoLick_Odor_v2
             if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
                 lickAction = 'lick';
                 ReinforcementOutcome = lickOutcome;               
-                if S.Block.Table.CSValence{TrialType} % 1 = CS+, 0 = CS-
+                if S.Block.Table.CSValence(TrialType) % 1 = CS+, 0 = CS-
                     TrialOutcome = 1; % hit
                 else
                     TrialOutcome = 0; % false alarm
@@ -392,7 +342,7 @@ function lickNoLick_Odor_v2
             else
                 lickAction = 'nolick';
                 ReinforcementOutcome = noLickOutcome;
-                if S.Block.Table.CSValence{TrialType} % 1 = CS+, 0 = CS-
+                if S.Block.Table.CSValence(TrialType) % 1 = CS+, 0 = CS-
                     TrialOutcome = -1; % miss
                 else
                     TrialOutcome = 2; % correct rejection
@@ -402,7 +352,8 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
             BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
             BpodSystem.Data.OdorValve(end + 1) =  OdorValve;
-            BpodSystem.Data.CSValence(end + 1) = S.Block.Table.CSValence{TrialType};% 1 = CS+, 0 = CS-
+            BpodSystem.Data.OdorValveIndex(end + 1) = S.Block.Table.CS(TrialType);
+            BpodSystem.Data.CSValence(end + 1) = S.Block.Table.CSValence(TrialType);% 1 = CS+, 0 = CS-
             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             BpodSystem.Data.ReinforcementOutcome{end + 1} = ReinforcementOutcome; % i.e. 1: reward, 2: neutral, 3: punish
             BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
@@ -415,10 +366,16 @@ function lickNoLick_Odor_v2
             %% adaptive block transitions
             if S.Block.LinkTo
                 switchFcn = str2func(S.Block.LinkToFcn);
-                S.GUI.Block = switchFcn(BpodSystem.Data.TrialOutcome, BpodSystem.Data.BlockNumber, S);
+                [S.GUI.Block, switchParameter, switchParameterCriterion] = switchFcn(BpodSystem.Data.TrialOutcome, BpodSystem.Data.BlockNumber, S);
                 S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+            else
+                switchParameter = NaN;
+                switchParameterCriterion = NaN;
             end
+            BpodSystem.Data.SwitchParameter(end + 1) = switchParameter;
             
+            %% update photometry rasters
+            lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion);            
             
             
             

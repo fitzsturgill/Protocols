@@ -7,7 +7,7 @@ S = struct(); ST = struct();
 ST.BlockNumber = 1; % fluff
 ST.P = 1;
 ST.CS = 1; % will be used to select S.GUI.Odor1Valve
-ST.CSValence = = 1;
+ST.CSValence = 1;
 ST.US = {'Reward'};   % Reward
 ST.Instrumental = 0;
 S.Table = struct2table(ST);
