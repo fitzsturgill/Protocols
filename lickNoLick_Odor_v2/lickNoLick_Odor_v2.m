@@ -35,7 +35,6 @@ function lickNoLick_Odor_v2
         % parameters for adaptive reversals 
 
         % common across LinkTo functions
-        'performanceTally', [];... % tally of parameter controlling reversals, plotted online
         'reversalCriterion', [];... % criterion for reversal, plotted online
         
         % number correct dictates reversal, LinkToFcn =
@@ -73,7 +72,7 @@ function lickNoLick_Odor_v2
 
     S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
     %% Load Tables
-    bfh = str2func(GUI.BlockFcn);
+    bfh = str2func(S.GUI.BlockFcn);
     try
         S.Tables = bfh();
     catch
@@ -174,6 +173,7 @@ function lickNoLick_Odor_v2
     BpodSystem.Data.Epoch = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.BlockNumber = [];
     BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
+    BpodSystem.Data.SwitchParameterCriterion = [];
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -373,9 +373,12 @@ function lickNoLick_Odor_v2
                 switchParameterCriterion = NaN;
             end
             BpodSystem.Data.SwitchParameter(end + 1) = switchParameter;
+            BpodSystem.Data.SwitchParameterCriterion = SwitchParameterCriterion;
             
             %% update photometry rasters
-            lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion);            
+            if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
+                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion);            
+            end
             
             
             
