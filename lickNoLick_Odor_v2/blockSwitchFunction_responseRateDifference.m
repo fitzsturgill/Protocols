@@ -11,12 +11,13 @@ function [nextBlock, rateDiff, criterion] = blockSwitchFunction_responseRateDiff
             
         nextBlock = 0;
         lastReverse = find(diff(blockNumbers), 1, 'last');
-        trialsCurrentBlock = numel(blockNumbers) - lastReverse + 1;
+
         if isempty(lastReverse)
             lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
         else
             lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
         end
+        trialsCurrentBlock = numel(blockNumbers) - lastReverse; % already added 1 to lastReverse
         
         if any(ismember(outcomes(lastReverse:end), [1 -1])) && any(ismember(outcomes(lastReverse:end), [0 2])) % needs to be at least 1 trial of each trial type (CS+ and CS-)
             HitRate = length(find(outcomes(lastReverse:end) == 1)) / length(find(ismember(outcomes(lastReverse:end), [1 -1]))); % 
@@ -30,6 +31,8 @@ function [nextBlock, rateDiff, criterion] = blockSwitchFunction_responseRateDiff
 
         if rateDiff >= S.SwFcn_BlockRRD_minDiff && trialsCurrentBlock >= S.SwFcn_BlockRRD_minTrials
             nextBlock = S.block.LinkTo;
+        else
+            nextBlock = S.GUI.Block;
         end
         
         criterion = S.SwFcn_BlockRRD_minDiff;

@@ -23,7 +23,7 @@ function lickNoLick_Odor_v2
         'GUI.PhotometryOn', 1;...
         
         'GUI.BlockFcn', 'pavlovian_reversals_blocks';...
-        'GUIMeta.BlockFcn', 'style'
+        'GUIMeta.BlockFcn.Style', 'editText'
         'GUI.Block', 1;...
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
@@ -77,7 +77,7 @@ function lickNoLick_Odor_v2
     try
         S.Tables = bfh();
     catch
-        error('** block function not correctly specified ***');
+        error('** block function error ***');
     end
     
     %% Initialize NIDAQ
@@ -374,7 +374,7 @@ function lickNoLick_Odor_v2
                 switchParameterCriterion = NaN;
             end
             BpodSystem.Data.SwitchParameter(end + 1) = switchParameter;
-            BpodSystem.Data.SwitchParameterCriterion = SwitchParameterCriterion;
+            BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
             
             %% update photometry rasters
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
