@@ -24,7 +24,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
             BpodSystem.ProtocolFigures.phRaster.odorsToPlot = ls.odorsToPlot;
             BpodSystem.ProtocolFigures.phRaster.switchParameterCriterion = ls.switchParameterCriterion;            
             
-            if S.GUI.LED1_amp > 0
+            if BpodSystem.ProtocolSettings.GUI.LED1_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
                 nAxes = size(BpodSystem.ProtocolFigures.phRaster.TypesOutcomes, 1);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
@@ -39,7 +39,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'Color', 'm');
             end
 
-            if S.GUI.LED2_amp > 0
+            if BpodSystem.ProtocolSettings.GUI.LED2_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
                 nAxes = size(BpodSystem.ProtocolFigures.phRaster.TypesOutcomes, 1);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
