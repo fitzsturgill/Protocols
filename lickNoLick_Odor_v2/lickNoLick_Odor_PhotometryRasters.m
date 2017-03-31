@@ -26,7 +26,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
             
             if BpodSystem.ProtocolSettings.GUI.LED1_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
-                nAxes = size(BpodSystem.ProtocolFigures.phRaster.TypesOutcomes, 1);        
+                nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
                 params.cellmargin = [0.05 0.05 0.05 0.05];   
                 params.matpos = [0 0 0.2 1];
@@ -41,7 +41,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
 
             if BpodSystem.ProtocolSettings.GUI.LED2_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
-                nAxes = size(BpodSystem.ProtocolFigures.phRaster.TypesOutcomes, 1);        
+                nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
                 params.cellmargin = [0.05 0.05 0.05 0.05];   
                 params.matpos = [0 0 0.2 1];
@@ -54,7 +54,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'Color', 'm');        
             end    
 
-        case 'Update'
+        case 'update'
             %% update photometry rasters
             displaySampleRate = nidaq.sample_rate / BpodSystem.ProtocolFigures.phRaster.decimationFactor;
             x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);

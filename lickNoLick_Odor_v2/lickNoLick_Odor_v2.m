@@ -86,8 +86,10 @@ function lickNoLick_Odor_v2
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
     end
+    %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
-        lickNoLick_Odor_PhotometryRasters('Init', 'baselinePeriod', [1 S.PreCsRecording])
+        updatePhotometryPlot('init');
+        lickNoLick_Odor_PhotometryRasters('init', 'baselinePeriod', [1 S.PreCsRecording])
     end
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
@@ -325,7 +327,7 @@ function lickNoLick_Odor_v2
                 processPhotometryAcq(currentTrial);
             %% online plotting
                 processPhotometryOnline(currentTrial);
-                updatePhotometryPlot(startX);         
+                updatePhotometryPlot('update', startX);         
             end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
