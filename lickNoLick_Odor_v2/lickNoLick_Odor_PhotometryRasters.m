@@ -78,10 +78,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     if i == 1
                         set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.SwitchParameter);
                         set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(ls.switchParameterCriterion, 1, nTrials));            
-                        if ls.switchParameterCriterion
+                        if ~isnan(ls.switchParameterCriterion)
                             set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.SwitchParameter(end) + 1, ls.switchParameterCriterion + 1)]);
                         else
-                            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.SwitchParameter(end)) + 0.1]);
+                            if ~isnan(BpodSystem.Data.SwitchParameter(end))
+                                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 BpodSystem.Data.SwitchParameter(end) + 0.1]);
+                            end
                         end
                     end
                     phMean = mean(mean(channelData(:,x1:x2)));
@@ -112,10 +114,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     if i == 1
                         set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.SwitchParameter);
                         set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(ls.switchParameterCriterion, 1, nTrials));            
-                        if ls.switchParameterCriterion
+                        if ~isnan(ls.switchParameterCriterion)
                             set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.SwitchParameter(end) + 1, ls.switchParameterCriterion + 1)]);
                         else
-                            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.SwitchParameter(end)) + 0.1]);
+                            if ~isnan(BpodSystem.Data.SwitchParameter(end))
+                                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 BpodSystem.Data.SwitchParameter(end) + 0.1]);
+                            end
                         end
                     end
                     phMean = mean(mean(channelData(:,x1:x2)));
