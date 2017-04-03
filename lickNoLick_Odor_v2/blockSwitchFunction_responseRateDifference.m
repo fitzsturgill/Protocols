@@ -17,8 +17,8 @@ function [nextBlock, rateDiff, criterion] = blockSwitchFunction_responseRateDiff
         else
             lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
         end
-        trialsCurrentBlock = numel(blockNumbers) - lastReverse; % already added 1 to lastReverse
-        
+%         trialsCurrentBlock = numel(blockNumbers) - lastReverse; % already added 1 to lastReverse
+        trialsCurrentBlock = length(find(~isnan(outcomes(lastReverse:end)))); % don't count uncued (for which outcome = NaN)
         if any(ismember(outcomes(lastReverse:end), [1 -1])) && any(ismember(outcomes(lastReverse:end), [0 2])) % needs to be at least 1 trial of each trial type (CS+ and CS-)
             HitRate = length(find(outcomes(lastReverse:end) == 1)) / length(find(ismember(outcomes(lastReverse:end), [1 -1]))); % 
             FARate = length(find(outcomes(lastReverse:end) == 0)) / length(find(ismember(outcomes(lastReverse:end), [0 2]))); % 

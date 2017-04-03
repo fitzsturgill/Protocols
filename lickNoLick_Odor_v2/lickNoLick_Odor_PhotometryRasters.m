@@ -22,7 +22,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
             BpodSystem.ProtocolFigures.phRaster.lookupFactor = ls.lookupFactor;
             BpodSystem.ProtocolFigures.phRaster.phRStamp = ls.phRStamp;            
             BpodSystem.ProtocolFigures.phRaster.odorsToPlot = ls.odorsToPlot;
-            BpodSystem.ProtocolFigures.phRaster.switchParameterCriterion = ls.switchParameterCriterion;            
+            BpodSystem.ProtocolFigures.phRaster.switchParameterCriterion = ls.switchParameterCriterion;
             
             if BpodSystem.ProtocolSettings.GUI.LED1_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
@@ -37,8 +37,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 set(hAx, 'YDir', 'Reverse');
                 BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'Color', 'm');
+            else
+                BpodSystem.ProtocolFigures.phRaster.fig_ch1 = [];
+                BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = [];
+                BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = [];
+                BpodSystem.ProtocolFigures.phRaster.ax_ch1
             end
-
             if BpodSystem.ProtocolSettings.GUI.LED2_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
                 nAxes = numel(ls.odorsToPlot);        
@@ -52,8 +56,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 set(hAx, 'YDir', 'Reverse');
                 BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1), 'Color', 'm');        
-            end    
-
+            else
+                BpodSystem.ProtocolFigures.phRaster.fig_ch2 = [];
+                BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = [];
+                BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = [];
+                BpodSystem.ProtocolFigures.phRaster.ax_ch2
+            end
         case 'update'
             %% update photometry rasters
             displaySampleRate = nidaq.sample_rate / BpodSystem.ProtocolFigures.phRaster.decimationFactor;

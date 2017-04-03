@@ -91,6 +91,10 @@ function lickNoLick_Odor_v2
         updatePhotometryPlot('init');
         lickNoLick_Odor_PhotometryRasters('init', 'baselinePeriod', [1 S.PreCsRecording])
     end
+    %% lick rasters for cs1 and cs2
+    BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 2, 1);
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 2, 2);
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
         SF = 192000;
@@ -187,7 +191,9 @@ function lickNoLick_Odor_v2
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         S.Block = S.Tables{S.GUI.Block};
         TrialType = pickRandomTrials_blocks(S.Block.Table);
-        switch S.Block.Table.CS(TrialType) 
+        switch S.Block.Table.CS(TrialType)
+            case 0
+                OdorValve = 0; % ommission
             case 1
                 OdorValve = S.GUI.Odor1Valve;
             case 2
@@ -333,22 +339,26 @@ function lickNoLick_Odor_v2
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)        
             
-            %TrialOutcome -> NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
+            %TrialOutcome -> NaN: future trial or omission, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
             if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
                 lickAction = 'lick';
                 ReinforcementOutcome = lickOutcome;               
-                if S.Block.Table.CSValence(TrialType) % 1 = CS+, 0 = CS-
+                if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
                     TrialOutcome = 1; % hit
-                else
+                elseif S.Block.Table.CSValence(TrialType) == -1
                     TrialOutcome = 0; % false alarm
+                else
+                    TrialOutcome = NaN; % uncued
                 end
             else
                 lickAction = 'nolick';
                 ReinforcementOutcome = noLickOutcome;
-                if S.Block.Table.CSValence(TrialType) % 1 = CS+, 0 = CS-
+                if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
                     TrialOutcome = -1; % miss
-                else
+                elseif S.Block.Table.CSValence(TrialType) == -1
                     TrialOutcome = 2; % correct rejection
+                else
+                    TrialOutcome = NaN; % uncued
                 end                
             end
 
@@ -362,7 +372,7 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
             BpodSystem.Data.LickAction{end + 1} = lickAction;
             
-            if strcmp(ReinforcementOutcome, 'reward')
+            if strcmpi(ReinforcementOutcome, 'reward')
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
             
@@ -378,10 +388,37 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.SwitchParameter(end + 1) = switchParameter;
             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
             
+            %% block transition lines
+            blockTransitions = diff(BpodSystem.Data.BlockNumber);
+            if (~isempty(blockTransitions))
+                btx = repmat([startX; startX + S.nidaq.duration], 1, length(blockTransitions));
+                bty = repmat(blockTransitions', 1, length(blockTransitions), '-r');
+            end
             %% update photometry rasters
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
-                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion);            
+                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion);
+                if ~isempty(blockTransitions) % block transition lines
+                    if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
+                        for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
+                            plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.phRaster.ax_ch1);
+                        end
+                    end
+                    if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch2)
+                        for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch2(2:end)
+                            plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.phRaster.ax_ch2);
+                        end
+                    end
+                end
             end
+            
+            %% lick rasters by odor                
+            bpLickRaster(BpodSystem.Data, [1 3], [], 'Cue', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor1); hold on;
+            bpLickRaster(BpodSystem.Data, [2 4], [], 'Cue', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor2); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
+            if ~isempty(blockTransitions)
+                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
+                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); % just make 
+            end             
+            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);   
             
             
             
