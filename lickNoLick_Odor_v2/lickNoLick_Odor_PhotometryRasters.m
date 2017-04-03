@@ -9,6 +9,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
         'decimationFactor', nidaq.online.decimationFactor;...
         'switchParameterCriterion', NaN;... % supplied upon update!!!
         'odorsToPlot', [1 2];...
+        'XLim', 0;...
         };
     [ls, ~] = parse_args(defaults, varargin{:}); % combine default and passed (via varargin) parameter settings
 
@@ -32,7 +33,8 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 params.matpos = [0 0 0.2 1];
                 hAx = axesmatrix(1, 1, 1, params, gcf); % axis for cumulative nCorrect plot that resets with reversal
                 params.matpos = [0.2 0 0.8 1];        
-                hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));            
+                hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));      
+                set(hAx, 'NextPlot', 'Add');
                 BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
                 set(hAx, 'YDir', 'Reverse');
                 BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
@@ -41,7 +43,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = [];
                 BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1 = [];
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = [];
-                BpodSystem.ProtocolFigures.phRaster.ax_ch1
+                BpodSystem.ProtocolFigures.phRaster.ax_ch1 = [];
             end
             if BpodSystem.ProtocolSettings.GUI.LED2_amp > 0
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
@@ -51,7 +53,8 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 params.matpos = [0 0 0.2 1];
                 hAx = axesmatrix(1, 1, 1, params, gcf); % axis for cumulative nCorrect plot that resets with reversal
                 params.matpos = [0.2 0 0.8 1];    
-                hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));            
+                hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));  
+                set(hAx, 'NextPlot', 'Add');
                 BpodSystem.ProtocolFigures.phRaster.ax_ch2 = hAx;
                 set(hAx, 'YDir', 'Reverse');
                 BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = line('XData', NaN, 'YData', NaN, 'Parent', hAx(1));
@@ -60,7 +63,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = [];
                 BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2 = [];
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2 = [];
-                BpodSystem.ProtocolFigures.phRaster.ax_ch2
+                BpodSystem.ProtocolFigures.phRaster.ax_ch2 = [];
             end
         case 'update'
             %% update photometry rasters
@@ -109,8 +112,8 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(intersect(outcome_right, rewardTrials), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
                     CData(intersect(outcome_right, neutralTrials), (nSamples+1):(nSamples + phRStamp)) = 0;            
                     CData(intersect(outcome_right, punishTrials), (nSamples+1):(nSamples + phRStamp)) = -255;            
-
-                    image('YData', [1 size(CData, 1)],...
+                    
+                    image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
@@ -146,7 +149,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(intersect(outcome_right, neutralTrials), (nSamples+1):(nSamples + phRStamp)) = 0;            
                     CData(intersect(outcome_right, punishTrials), (nSamples+1):(nSamples + phRStamp)) = -255;            
 
-                    image('YData', [1 size(CData, 1)],...
+                    image('YData', [1 size(CData, 1)], 'XData', ls.XLim,...
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});

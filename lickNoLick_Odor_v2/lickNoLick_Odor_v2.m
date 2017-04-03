@@ -189,6 +189,8 @@ function lickNoLick_Odor_v2
     %% Main trial loop
     for currentTrial = 1:MaxTrials
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+        BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
+        SaveBpodProtocolSettings;
         S.Block = S.Tables{S.GUI.Block};
         TrialType = pickRandomTrials_blocks(S.Block.Table);
         switch S.Block.Table.CS(TrialType)
@@ -389,36 +391,40 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
             
             %% block transition lines
-            blockTransitions = diff(BpodSystem.Data.BlockNumber);
-            if (~isempty(blockTransitions))
-                btx = repmat([startX; startX + S.nidaq.duration], 1, length(blockTransitions));
-                bty = repmat(blockTransitions', 1, length(blockTransitions), '-r');
+            blockTransitions = find(diff(BpodSystem.Data.BlockNumber));
+            if any(blockTransitions)
+                btx = repmat([startX, startX + S.nidaq.duration], length(blockTransitions), 1);
+                btx2 = repmat([-S.nidaq.duration, S.nidaq.duration], length(blockTransitions), 1);
+                bty = [blockTransitions', blockTransitions'];
             end
             %% update photometry rasters
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
-                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion);
-                if ~isempty(blockTransitions) % block transition lines
+                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
+                if any(blockTransitions) % block transition lines
                     if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
                         for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
-                            plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.phRaster.ax_ch1);
+                            plot(btx2, bty, '-r', 'Parent', ah);
                         end
                     end
                     if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch2)
                         for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch2(2:end)
-                            plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.phRaster.ax_ch2);
+                            plot(btx2, bty, '-r', 'Parent', ah);
                         end
                     end
                 end
             end
             
-            %% lick rasters by odor                
-            bpLickRaster(BpodSystem.Data, [1 3], [], 'Cue', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor1); hold on;
-            bpLickRaster(BpodSystem.Data, [2 4], [], 'Cue', [], BpodSystem.ProtocolFigures.lickRaster.AxOdor2); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
-            if ~isempty(blockTransitions)
+            %% lick rasters by odor   
+%             bpLickRaster2(SessionData, filtArg, zeroField, figName, ax)
+            bpLickRaster2({'OdorValveIndex', 1}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor1); hold on;
+            bpLickRaster2({'OdorValveIndex', 2}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
+            if any(blockTransitions)
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); % just make 
+                drawnow;
             end             
-            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);   
+            lickStartX = 0 - S.PreCsRecording;
+            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [lickStartX, lickStartX + S.nidaq.duration]);   
             
             
             
