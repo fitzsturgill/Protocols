@@ -16,7 +16,9 @@ function lickNoLick_Odor_v2
         'GUI.NoLick', 0;... % mouse must stop licking for this period to advance to the next trial
         'GUI.AnswerDelay', 1;... % post-odor, time until answer period, may be updated trial-by-trial
         'AnswerMaxDelay', 1;... % maximum delay to answer, defines NIDAQ acquisition duration
-        'GUI.outcomeDelay', 0;... % response (lick) to reinforcement delay, may be updated trial-by-trial
+        % set outcomeDelay = answer for fixed timing (as in pavlovian
+        % conditioning)
+        'GUI.outcomeDelay', 1;... % response (lick) to reinforcement delay
         'GUI.Answer', 1;... % answer period duration
         'GUI.PunishValveTime', 0.2;... %s        
         'GUI.Reward', 8;...
@@ -82,13 +84,14 @@ function lickNoLick_Odor_v2
     
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
-    startX = 0 - S.PreCsRecording - S.OdorTime - S.AnswerMaxDelay - S.GUI.Answer; % 0 defined as time from reinforcement
+    startX = 0 - S.PreCsRecording; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
     end
     %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         updatePhotometryPlot('init');
+        xlabel('Time from cue (s)');
         lickNoLick_Odor_PhotometryRasters('init', 'baselinePeriod', [1 S.PreCsRecording])
     end
     %% lick rasters for cs1 and cs2
@@ -423,8 +426,8 @@ function lickNoLick_Odor_v2
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); % just make 
                 drawnow;
             end             
-            lickStartX = 0 - S.PreCsRecording;
-            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [lickStartX, lickStartX + S.nidaq.duration]);   
+            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);
+            xlabel([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'Time from cue (s)');
             
             
             
