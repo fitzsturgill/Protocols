@@ -118,7 +118,12 @@ function lickNoLick_Odor_v2
         
 
         load('PulsePalParamFeedback.mat');
-        ProgramPulsePal(PulsePalParamFeedback);        
+        try
+            ProgramPulsePal(PulsePalParamFeedback);        
+        catch % if you're a dolt and forgot to start pulse pal
+            PulsePal;
+            ProgramPulsePal(PulsePalParamFeedback);        
+        end
         maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
         nPulses = 1000;
         SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
