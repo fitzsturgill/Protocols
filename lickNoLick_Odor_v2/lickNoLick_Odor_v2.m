@@ -14,11 +14,10 @@ function lickNoLick_Odor_v2
         'GUI.ITI', 0;... % reserved for future use
         'GUI.mu_iti', 6;... % if > 0, determines random ITI
         'GUI.NoLick', 0;... % mouse must stop licking for this period to advance to the next trial
-        'GUI.AnswerDelay', 1;... % post-odor, time until answer period, may be updated trial-by-trial
-        'AnswerMaxDelay', 1;... % maximum delay to answer, defines NIDAQ acquisition duration
-        % set outcomeDelay = answer for fixed timing (as in pavlovian
-        % conditioning)
-        'GUI.outcomeDelay', 1;... % response (lick) to reinforcement delay
+        'GUI.AnswerDelay', 1;... % post-odor, time until answer period, (in future may be updated trial-by-trial)
+        % !!!! set OutcomeDelay = Answer for fixed timing (as in pavlovian
+        % conditioning)!!!
+        'GUI.OutcomeDelay', 1;... % response (lick) to reinforcement delay, (in future may be updated trial-by-trial)
         'GUI.Answer', 1;... % answer period duration
         'GUI.PunishValveTime', 0.2;... %s        
         'GUI.Reward', 8;...
@@ -83,7 +82,7 @@ function lickNoLick_Odor_v2
     end
     
     %% Initialize NIDAQ
-    S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.AnswerMaxDelay + S.GUI.Answer + S.PostUsRecording;
+    S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.GUI.AnswerDelay + S.GUI.Answer + S.PostUsRecording;
     startX = 0 - S.PreCsRecording; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
@@ -91,7 +90,6 @@ function lickNoLick_Odor_v2
     %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         updatePhotometryPlot('init');
-        xlabel('Time from cue (s)');
         lickNoLick_Odor_PhotometryRasters('init', 'baselinePeriod', [1 S.PreCsRecording])
     end
     %% lick rasters for cs1 and cs2
@@ -289,7 +287,7 @@ function lickNoLick_Odor_v2
             'StateChangeConditions', {'Port1In', 'AnswerLick', 'GlobalTimer1_End', noLickOutcome},...
             'OutputActions', {});     
         sma = AddState(sma, 'Name', 'AnswerLick', ... 
-            'Timer', S.GUI.outcomeDelay,...
+            'Timer', S.GUI.OutcomeDelay,...
             'StateChangeConditions', {'Tup', lickOutcome, 'GlobalTimer1_End', lickOutcome},... % whichever comes first
             'OutputActions', {});             
         sma = AddState(sma, 'Name', 'NoLickOutcome',... % dummy state for alignment
@@ -343,7 +341,8 @@ function lickNoLick_Odor_v2
                 processPhotometryAcq(currentTrial);
             %% online plotting
                 processPhotometryOnline(currentTrial);
-                updatePhotometryPlot('update', startX);         
+                updatePhotometryPlot('update', startX);  
+                xlabel('Time from cue (s)');
             end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
@@ -432,7 +431,8 @@ function lickNoLick_Odor_v2
                 drawnow;
             end             
             set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);
-            xlabel([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'Time from cue (s)');
+            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'Time from cue (s)');
+            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'Time from cue (s)');
             
             
             
