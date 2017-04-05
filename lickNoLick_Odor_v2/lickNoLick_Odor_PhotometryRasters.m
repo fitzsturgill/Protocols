@@ -106,12 +106,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(outcome_left(rewardTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(outcome_left(neutralTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 0;            
-                    CData(outcome_left(punishTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = -255;            
-                    CData(outcome_right(rewardTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(outcome_right(neutralTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 0;            
-                    CData(outcome_right(punishTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = -255;            
+                    CData(intersect(rewardTrials, outcome_left), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(intersect(neutralTrials, outcome_left), (nSamples - phRStamp + 1):nSamples) = 0;            
+                    CData(intersect(punishTrials, outcome_left), (nSamples - phRStamp + 1):nSamples) = -255;            
+                    CData(intersect(rewardTrials, outcome_right), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(intersect(neutralTrials, outcome_right), (nSamples+1):(nSamples + phRStamp)) = 0;            
+                    CData(intersect(punishTrials, outcome_right), (nSamples+1):(nSamples + phRStamp)) = -255;            
                     
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
@@ -142,12 +142,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(outcome_left(rewardTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(outcome_left(neutralTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 0;            
-                    CData(outcome_left(punishTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = -255;            
-                    CData(outcome_right(rewardTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(outcome_right(neutralTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 0;            
-                    CData(outcome_right(punishTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = -255;                
+                    CData(intersect(rewardTrials, outcome_left), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(intersect(neutralTrials, outcome_left), (nSamples - phRStamp + 1):nSamples) = 0;            
+                    CData(intersect(punishTrials, outcome_left), (nSamples - phRStamp + 1):nSamples) = -255;            
+                    CData(intersect(rewardTrials, outcome_right), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(intersect(neutralTrials, outcome_right), (nSamples+1):(nSamples + phRStamp)) = 0;            
+                    CData(intersect(punishTrials, outcome_right), (nSamples+1):(nSamples + phRStamp)) = -255;                   
 
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,...
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
