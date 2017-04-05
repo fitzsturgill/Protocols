@@ -142,6 +142,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
+                    rewardLeft = outcome_left
                     CData(intersect(outcome_left, rewardTrials), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
                     CData(intersect(outcome_left, neutralTrials), (nSamples - phRStamp + 1):nSamples) = 0;            
                     CData(intersect(outcome_left, punishTrials), (nSamples - phRStamp + 1):nSamples) = -255;            
