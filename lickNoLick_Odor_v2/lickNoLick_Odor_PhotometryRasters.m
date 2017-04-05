@@ -71,9 +71,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
             x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);
             x2 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(2), displaySampleRate, 0);        
 
-            rewardTrials = find(onlineFilterTrials_v2('ReinforcementOutcome', 'Reward'));
-            neutralTrials = find(onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral'));
-            punishTrials = find(onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'}));                
+               
             nTrials = length(BpodSystem.Data.TrialTypes);
             odorsToPlot = BpodSystem.ProtocolFigures.phRaster.odorsToPlot;
             phRStamp = BpodSystem.ProtocolFigures.phRaster.phRStamp;
@@ -82,7 +80,9 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 thisOdorIndex = odorsToPlot(i);
                 outcome_left = onlineFilterTrials_v2('OdorValveIndex', thisOdorIndex,'TrialOutcome', [-1, 0]); % miss or false alarm            
                 outcome_right = onlineFilterTrials_v2('OdorValveIndex', thisOdorIndex,'TrialOutcome', [1, 2]); % hit or correct rejection
-
+                rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
+                neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
+                punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
                 if BpodSystem.Data.Settings.GUI.LED1_amp > 0
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
                     nSamples = size(channelData, 2);
@@ -106,12 +106,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(intersect(outcome_left, rewardTrials), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(intersect(outcome_left, neutralTrials), (nSamples - phRStamp + 1):nSamples) = 0;            
-                    CData(intersect(outcome_left, punishTrials), (nSamples - phRStamp + 1):nSamples) = -255;            
-                    CData(intersect(outcome_right, rewardTrials), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(intersect(outcome_right, neutralTrials), (nSamples+1):(nSamples + phRStamp)) = 0;            
-                    CData(intersect(outcome_right, punishTrials), (nSamples+1):(nSamples + phRStamp)) = -255;            
+                    CData(outcome_left(rewardTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(outcome_left(neutralTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 0;            
+                    CData(outcome_left(punishTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = -255;            
+                    CData(outcome_right(rewardTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(outcome_right(neutralTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 0;            
+                    CData(outcome_right(punishTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = -255;            
                     
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
@@ -142,13 +142,12 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    rewardLeft = outcome_left
-                    CData(intersect(outcome_left, rewardTrials), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(intersect(outcome_left, neutralTrials), (nSamples - phRStamp + 1):nSamples) = 0;            
-                    CData(intersect(outcome_left, punishTrials), (nSamples - phRStamp + 1):nSamples) = -255;            
-                    CData(intersect(outcome_right, rewardTrials), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(intersect(outcome_right, neutralTrials), (nSamples+1):(nSamples + phRStamp)) = 0;            
-                    CData(intersect(outcome_right, punishTrials), (nSamples+1):(nSamples + phRStamp)) = -255;            
+                    CData(outcome_left(rewardTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(outcome_left(neutralTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = 0;            
+                    CData(outcome_left(punishTrials(outcome_left)), (nSamples - phRStamp + 1):nSamples) = -255;            
+                    CData(outcome_right(rewardTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(outcome_right(neutralTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = 0;            
+                    CData(outcome_right(punishTrials(outcome_right)), (nSamples+1):(nSamples + phRStamp)) = -255;                
 
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,...
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
