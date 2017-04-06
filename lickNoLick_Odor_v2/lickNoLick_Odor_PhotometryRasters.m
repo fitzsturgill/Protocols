@@ -29,7 +29,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
                 nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
-                params.cellmargin = [0.05 0.05 0.05 0.05];   
+                params.cellmargin = [0.02 0.02 0.02 0.02];   
                 params.matpos = [0 0 0.2 1];
                 hAx = axesmatrix(1, 1, 1, params, gcf); % axis for cumulative nCorrect plot that resets with reversal
                 params.matpos = [0.2 0 0.8 1];        
@@ -49,7 +49,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
                 nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
-                params.cellmargin = [0.05 0.05 0.05 0.05];   
+                params.cellmargin = [0.02 0.02 0.02 0.02];   
                 params.matpos = [0 0 0.2 1];
                 hAx = axesmatrix(1, 1, 1, params, gcf); % axis for cumulative nCorrect plot that resets with reversal
                 params.matpos = [0.2 0 0.8 1];    
@@ -117,6 +117,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
+                    axis(ax, 'tight');
                 end
                 
                 if BpodSystem.Data.Settings.GUI.LED2_amp > 0
@@ -153,6 +154,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
+                    axis(ax, 'tight');
                 end                
                 
 
