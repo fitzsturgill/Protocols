@@ -4,11 +4,12 @@ blocks = {};
 
 %% block 1
 S = struct(); ST = struct();
-ST.BlockNumber = 1; % fluff
-ST.P = 1;
-ST.CS = 1; % will be used to select S.GUI.Odor1Valve
-ST.US = {'Reward'};   % Reward
-ST.Instrumental = 0;
+ST.BlockNumber = [1; 1; 1]; % fluff
+ST.P = [0.9 * 0.9; 0.9 * 0.1; 0.1];
+ST.CS = [1; 1; 0]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = [1; 1; 0];
+ST.US = {'Reward'; 'Neutral'; 'Reward'};   % Reward
+ST.Instrumental = [0; 0; 0];
 S.Table = struct2table(ST);
 S.LinkTo = 0;
 S.LinkToFcn = '';

@@ -2,7 +2,7 @@ function blocks = pavlovian_reversals_blocks
 
 blocks = {};
 
-%% block 1 (same pavlovian vs. instrumental)
+%% block 1
 S = struct(); ST = struct();
 ST.BlockNumber = [1; 1; 1]; % fluff
 ST.P = [0.9 * 0.9; 0.9 * 0.1; 0.1];
