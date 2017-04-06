@@ -406,9 +406,9 @@ function lickNoLick_Odor_v2
             %% block transition lines
             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));
             if any(blockTransitions)
-                btx = repmat([startX, startX + S.nidaq.duration], length(blockTransitions), 1);
-                btx2 = repmat([-S.nidaq.duration, S.nidaq.duration], length(blockTransitions), 1);
-                bty = [blockTransitions', blockTransitions'];
+                btx = repmat([startX; startX + S.nidaq.duration], 1, length(blockTransitions));
+                btx2 = repmat([-S.nidaq.duration; S.nidaq.duration], 1, length(blockTransitions));
+                bty = [blockTransitions; blockTransitions;];
             end
             %% update photometry rasters
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
