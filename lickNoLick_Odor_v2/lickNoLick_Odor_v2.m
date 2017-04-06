@@ -22,6 +22,7 @@ function lickNoLick_Odor_v2
         'GUI.PunishValveTime', 0.2;... %s        
         'GUI.Reward', 8;...
         'GUI.PhotometryOn', 1;...
+        'GUI.UsePulsePal', 1;...
         
         'GUI.BlockFcn', 'pavlovian_reversals_blocks';...
         'GUIMeta.BlockFcn.Style', 'editText'
@@ -116,16 +117,21 @@ function lickNoLick_Odor_v2
         
 
         load('PulsePalParamFeedback.mat');
-        try
-            ProgramPulsePal(PulsePalParamFeedback);        
-        catch % if you're a dolt and forgot to start pulse pal
-            PulsePal;
-            ProgramPulsePal(PulsePalParamFeedback);        
+        if S.GUI.UsePulsePal
+            soundArg = bitset(0, 2); % kludge to get pulse pal to work on top rig but not disrupt bottom rig
+            try
+                ProgramPulsePal(PulsePalParamFeedback);        
+            catch % if you're a dolt and forgot to start pulse pal
+                PulsePal;
+                ProgramPulsePal(PulsePalParamFeedback);        
+            end
+                maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
+                nPulses = 1000;
+                SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
+                SendCustomWaveform(2, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %        
+        else
+            soundArg = 0;
         end
-        maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
-        nPulses = 1000;
-        SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
-        SendCustomWaveform(2, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %        
 
     
         %% Initialize olfactometer and point grey camera
@@ -257,11 +263,11 @@ function lickNoLick_Odor_v2
         sma = AddState(sma,'Name', 'NoLick', ...
             'Timer', S.GUI.NoLick,...
             'StateChangeConditions', {'Tup', 'StartRecording','Port1In','RestartNoLick'},...
-            'OutputActions', {'WireState', bitset(0, 2)}); % Sound on
+            'OutputActions', {'WireState', bitset(0, 2)}); % Pulse Pal sound on
         sma = AddState(sma,'Name', 'RestartNoLick', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'NoLick'},...
-            'OutputActions', {}); % Sound on, to do
+            'OutputActions', {}); %
         sma = AddState(sma, 'Name', 'StartRecording',...
             'Timer',0.025,...
             'StateChangeConditions', {'Tup', 'PreCsRecording'},...
