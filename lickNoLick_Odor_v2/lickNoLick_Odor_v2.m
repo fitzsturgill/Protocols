@@ -251,7 +251,7 @@ function lickNoLick_Odor_v2
        %% Assemble state matrix
         sma = NewStateMatrix(); 
         sma = SetGlobalTimer(sma,1,S.GUI.Answer); % post cue   
-        sma = SetGlobalTimer(sma,2,S.nidaq.duration + 0.2); % photometry acq duration
+        sma = SetGlobalTimer(sma,2,S.nidaq.duration); % photometry acq duration
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'ITI'},...
@@ -335,7 +335,7 @@ function lickNoLick_Odor_v2
         end
         %% Run state matrix
         RawEvents = RunStateMatrix();  % Blocking!
-        
+        tic;
         %% Stop Photometry session
         if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             stopPhotometryAcq;   
