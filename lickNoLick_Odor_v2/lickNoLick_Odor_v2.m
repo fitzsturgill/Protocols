@@ -197,6 +197,17 @@ function lickNoLick_Odor_v2
     lickOutcome = '';
     noLickOutcome = '';
     lickAction = '';
+    %% Outcome Plot
+    trialsToShow = 50;
+    TrialTypes = NaN(1,MaxTrials);
+    TrialOutcomes = NaN(1,MaxTrials);
+    BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none');
+    BpodSystem.GUIHandles.OutcomePlot = axes;
+    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', TrialTypes, 'ntrials', trialsToShow);
+    
+    lickOutcome = '';
+    noLickOutcome = '';
+    lickAction = '';
     
     %% Main trial loop
     for currentTrial = 1:MaxTrials
@@ -386,7 +397,12 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.ReinforcementOutcome{end + 1} = ReinforcementOutcome; % i.e. 1: reward, 2: neutral, 3: punish
             BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
             BpodSystem.Data.LickAction{end + 1} = lickAction;
-            
+
+            %% update outcome plot to reflect upcoming trial
+            TrialTypes(currentTrial) = TrialType;
+            TrialOutcomes(currentTrial) = TrialOutcome;
+            TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
+                currentTrial + 1, TrialTypes, TrialOutcome);            
             if strcmpi(ReinforcementOutcome, 'reward')
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
