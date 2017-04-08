@@ -402,7 +402,7 @@ function lickNoLick_Odor_v2
             TrialTypes(currentTrial) = TrialType;
             TrialOutcomes(currentTrial) = TrialOutcome;
             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
-                currentTrial + 1, TrialTypes, TrialOutcome);            
+                currentTrial + 1, TrialTypes, TrialOutcomes);            
             if strcmpi(ReinforcementOutcome, 'reward')
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
