@@ -1,4 +1,4 @@
-function blocks = lickNoLick_Odor_v2_blocks
+function blocks = instrumental_reversals_blocks
 
 blocks = {};
 
