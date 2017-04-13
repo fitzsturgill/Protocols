@@ -14,7 +14,7 @@ function [nextBlock, rateDiff, criterion] = blockSwitchFunction_responseRateDiff
 
         if isempty(lastReverse)
             lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
-        else
+            elseg
             lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
         end
 %         trialsCurrentBlock = numel(blockNumbers) - lastReverse; % already added 1 to lastReverse
