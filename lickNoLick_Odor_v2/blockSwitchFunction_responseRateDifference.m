@@ -30,7 +30,7 @@ function [nextBlock, rateDiff, criterion] = blockSwitchFunction_responseRateDiff
     %   
 
         if rateDiff >= S.SwFcn_BlockRRD_minDiff && trialsCurrentBlock >= S.SwFcn_BlockRRD_minTrials
-            nextBlock = S.block.LinkTo;
+            nextBlock = S.Block.LinkTo;
         else
             nextBlock = S.GUI.Block;
         end
