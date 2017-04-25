@@ -19,6 +19,7 @@ function wheel_v1
         'GUI.PhotometryOn', 1;...
         'GUI.PhotometryDutyCycle', 1;... % fraction of trials with photometry
         'GUI.RewardValveCode', 1;...
+        'GUI.maxReward', 1000;...
         };
     
     S = setBpodDefaultSettings(S, defaults);
@@ -76,7 +77,9 @@ function wheel_v1
     
     %% Main trial loop
     nextReward = 0; % first reward delivered immediately after baseline in first trial
-    for currentTrial = 1:MaxTrials               
+    totalReward = 0;
+    for currentTrial = 1:MaxTrials         
+        disp([' *** Trial # ' num2str(currentTrial)]); % happens when you abort early (I think), e.g. when you are halting session
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         SaveBpodProtocolSettings;
@@ -98,6 +101,8 @@ function wheel_v1
         else % no reward this trial, deduct trial length
             nextReward = rewardTimes - S.GUI.AcqLength;
         end
+        rewardThisTrial = (length(rewardTimes) - 1) * S.GUI.Reward;
+        totalReward = totalReward + rewardThisTrial;
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         
         
@@ -152,9 +157,12 @@ function wheel_v1
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)                
-            TotalRewardDisplay('add', S.GUI.Reward * (length(rewardTimes) - 1));        
+            TotalRewardDisplay('add', rewardThisTrial);        
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+            if totalReward >= S.GUI.maxReward
+                RunProtocol('Stop');
+            end
         else
             disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
         end
