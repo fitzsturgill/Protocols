@@ -79,7 +79,7 @@ function wheel_v1
     nextReward = 0; % first reward delivered immediately after baseline in first trial
     totalReward = 0;
     for currentTrial = 1:MaxTrials         
-        disp([' *** Trial # ' num2str(currentTrial)]); % happens when you abort early (I think), e.g. when you are halting session
+        disp([' *** Trial # ' num2str(currentTrial)]); 
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         SaveBpodProtocolSettings;
@@ -88,10 +88,10 @@ function wheel_v1
         %% Deliver rewards with approximately flat hazard rate, ITI determined by reward timing        
         while 1
             thisTime = Inf;
-            while thisTime > 3 * S.GUI.mu_IRI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+            while thisTime > S.GUI.max_IRI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
                 thisTime = exprnd(S.GUI.mu_IRI);
             end
-            if sum(rewardTimes) + S.RewardValveTime * length(rewardTimes) - 1 >= S.GUI.AcqLength
+            if sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
                 break
             end
             rewardTimes(end + 1) = thisTime;
