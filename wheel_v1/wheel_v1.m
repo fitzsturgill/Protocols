@@ -44,6 +44,7 @@ function wheel_v1
     %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         updatePhotometryPlot('init');
+        BpodSystem.PluginObjects.Photometry.baselinePeriod = [0 S.GUI.Baseline]; % kludge, need to move baseline def. out of lickNoLick_Photometry_rasters
     end
     %% Initialize Sound Stimuli    
     if ~BpodSystem.EmulatorMode
