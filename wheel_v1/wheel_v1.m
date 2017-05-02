@@ -41,7 +41,10 @@ function wheel_v1
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
     end
-    
+    %% photometry plots
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+        updatePhotometryPlot('init');
+    end
     %% Initialize Sound Stimuli    
     if ~BpodSystem.EmulatorMode
         SF = 192000;
@@ -152,7 +155,7 @@ function wheel_v1
                 processPhotometryAcq(currentTrial);
             %% online plotting
                 processPhotometryOnline(currentTrial);
-                updatePhotometryPlot('update', startX);  
+                updatePhotometryPlot('update', 0);  
             end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
