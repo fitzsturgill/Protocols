@@ -88,7 +88,7 @@ function wheel_v1
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         SaveBpodProtocolSettings;
         
-        rewardTimes = min(0, nextReward - S.GUI.Baseline);
+        rewardTimes = max(0, nextReward - S.GUI.Baseline);
         %% Deliver rewards with approximately flat hazard rate, ITI determined by reward timing        
         while 1
             thisTime = Inf;
@@ -98,9 +98,9 @@ function wheel_v1
             if sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
                 break
             end
-            rewardTimes(end + 1) = thisTime;
+            rewardTimes(end + 1) = thisTime; %really you are collecting durations of inter reward intervals, refer to state matrix construction block
         end
-        if length(rewardTimes) > 1 % reward occurs this trial
+        if length(rewardTimes) > 1 % reward occurs this trial (i.e. you didn't hit break in outer 'while' loop above)
             nextReward = sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) - S.GUI.AcqLength;
         else % no reward this trial, deduct trial length
             nextReward = rewardTimes - S.GUI.AcqLength;
@@ -109,7 +109,7 @@ function wheel_v1
         totalReward = totalReward + rewardThisTrial;
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         
-        
+        %% state matrix construction        
         sma = NewStateMatrix(); 
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0.025,...
