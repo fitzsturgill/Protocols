@@ -54,6 +54,7 @@ function wheel_v1
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
+        BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     end
     
     
