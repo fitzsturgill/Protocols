@@ -161,7 +161,8 @@ function wheel_v1
             end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
-            BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)                
+            BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
+            BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
             TotalRewardDisplay('add', rewardThisTrial);        
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
