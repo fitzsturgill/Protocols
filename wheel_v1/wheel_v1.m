@@ -135,6 +135,10 @@ function wheel_v1
             'Timer', rewardTimes(end),...
             'StateChangeConditions', {'Tup', 'exit'},...
             'OutputActions', {});
+%         sma = AddState(sma, 'Name', 'End', ... % try an end state
+%             'Timer', 1,...
+%             'StateChangeConditions', {'Tup', 'exit'}, ...
+%             'OutputActions', {});
         
         %%
         SendStateMatrix(sma);
@@ -175,6 +179,7 @@ function wheel_v1
         
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
+            stopPhotometryAcq;   
             return
         end         
     end
