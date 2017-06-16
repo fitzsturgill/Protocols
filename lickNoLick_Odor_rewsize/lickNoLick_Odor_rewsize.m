@@ -93,12 +93,13 @@ function lickNoLick_Odor_rewsize
     %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         updatePhotometryPlot('init');
-        lickNoLick_Odor_PhotometryRasters('init', 'baselinePeriod', [1 S.PreCsRecording])
+        lickNoLick_Odor_PhotometryRasters_trialtype('init', 'baselinePeriod', [1 S.PreCsRecording])
     end
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 2, 1);
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 2, 2);
+    BpodSystem.ProtocolFigures.lickRaster.AxTrial1 = subplot(1, 3, 1);
+    BpodSystem.ProtocolFigures.lickRaster.AxTrial2 = subplot(1, 3, 2);
+    BpodSystem.ProtocolFigures.lickRaster.AxTrial3 = subplot(1, 3, 3);
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
         SF = 192000;
@@ -438,7 +439,7 @@ function lickNoLick_Odor_rewsize
             end
             %% update photometry rasters
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
-                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
+                lickNoLick_Odor_PhotometryRasters_trialtype('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
                 if any(blockTransitions) % block transition lines
                     if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
                         for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
@@ -455,16 +456,19 @@ function lickNoLick_Odor_rewsize
             
             %% lick rasters by odor   
 %             bpLickRaster2(SessionData, filtArg, zeroField, figName, ax)
-            bpLickRaster2({'OdorValveIndex', 1}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'session'); hold on;
-            bpLickRaster2({'OdorValveIndex', 2}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
+            bpLickRaster2({'TrialTypes', 1}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxTrial1, 'session'); hold on;
+            bpLickRaster2({'TrialTypes', 2}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxTrial2, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
+            bpLickRaster2({'TrialTypes', 3}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxTrial3, 'session'); hold on
             if any(blockTransitions)
-                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
-                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); % just make 
+                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxTrial1);
+                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxTrial2);
+                plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxTrial3);% just make 
                 drawnow;
             end             
-            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);
-            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'Time from cue (s)');
-            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'Time from cue (s)');
+            set([BpodSystem.ProtocolFigures.lickRaster.AxTrial1 BpodSystem.ProtocolFigures.lickRaster.AxTrial2 BpodSystem.ProtocolFigures.lickRaster.AxTrial3], 'XLim', [startX, startX + S.nidaq.duration]);
+            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxTrial1, 'Time from cue (s)');
+            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxTrial2, 'Time from cue (s)');
+            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxTrial3, 'Time from cue (s)');
             
             
             
