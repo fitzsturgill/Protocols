@@ -110,12 +110,12 @@ function wheel_v1
         totalReward = totalReward + rewardThisTrial;
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         
-        %% state matrix construction        
+        %% state matrix construction                
         sma = NewStateMatrix(); 
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0.025,...
             'StateChangeConditions', {'Tup', 'Baseline'},...
-            'OutputActions', {'GlobalTimerTrig', 2, 'BNCState', npgBNCArg, 'WireState', npgWireArg});
+            'OutputActions', {'BNCState', npgBNCArg, 'WireState', npgWireArg});
         sma = AddState(sma, 'Name','Baseline',...
             'Timer',S.GUI.Baseline,...
             'StateChangeConditions',{'Tup','IRI1'},...
@@ -131,7 +131,7 @@ function wheel_v1
                 'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
                 'OutputActions', {'ValveState', S.GUI.RewardValveCode, 'SoftCode', 1});            
         end
-        sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ...
+        sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % last IRI encompasses ITI
             'Timer', rewardTimes(end),...
             'StateChangeConditions', {'Tup', 'exit'},...
             'OutputActions', {});
@@ -145,6 +145,7 @@ function wheel_v1
         end
         %% Run state matrix
         RawEvents = RunStateMatrix();  % Blocking!
+        disp('*** trial ended ***');
         tic;
         %% Stop Photometry session
         if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
@@ -175,6 +176,7 @@ function wheel_v1
         
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
+            stopPhotometryAcq;   
             return
         end         
     end

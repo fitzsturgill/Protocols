@@ -88,8 +88,6 @@ function habituation_headFixed
             'Timer',S.ITI,...
             'StateChangeConditions', {'Tup', 'exit'},...
             'OutputActions',{});
-
-
         %%
         BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
         SendStateMatrix(sma);
@@ -98,7 +96,7 @@ function habituation_headFixed
 
         % Run state matrix
         RawEvents = RunStateMatrix();  % Blocking!
-
+        disp('trial ended');
 
 
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
