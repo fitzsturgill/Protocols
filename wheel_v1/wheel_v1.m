@@ -12,6 +12,12 @@ function wheel_v1
         'GUI.AcqLength', 30;...
         'GUI.LED1_amp', 1.5;...
         'GUI.LED2_amp', 0;...
+        'GUI.ch1', 1;...
+        'GUIMeta.ch1.Style', 'checkbox';...    
+        'GUI.ch2', 1;...
+        'GUIMeta.ch2.Style', 'checkbox';...  
+        'GUI.alternateLEDs', 0;... % alternate which LEDs are turned on (both on, 1 on, 2 on, both on, etc.);
+        'GUIMeta.alternateLEDs.Style', 'checkbox';...
         'GUI.mu_IRI', 15;... % mean inter-reward interval
         'GUI.min_IRI', 2;...
         'GUI.max_IRI', 45;...
@@ -77,13 +83,38 @@ function wheel_v1
         end
     end
     
+    %% alternate LED mode
+    if S.GUI.alternateLEDs
+        if ~all([S.GUI.ch1on S.GUI.ch2on])
+            error('Both acquisition channels must be turned on for alternate LED mode');
+        end
+        % store initial LED settings
+        storedLED1_amp = S.GUI.LED1_amp;
+        storedLED1_amp = S.GUI.LED1_amp;
+    end
+    
     %% initialize trial types and outcomes
     MaxTrials = 1000;
     
     %% Main trial loop
     nextReward = 0; % first reward delivered immediately after baseline in first trial
     totalReward = 0;
-    for currentTrial = 1:MaxTrials         
+    for currentTrial = 1:MaxTrials
+        
+        if S.GUI.alternateLEDs
+            LEDmode = rem(currentTrial, 3);
+            switch LEDmode
+                case 1
+                    S.GUI.LED1_amp = storedLED1_amp;
+                    S.GUI.LED2_amp = storedLED2_amp;
+                case 2
+                    S.GUI.LED1_amp = storedLED1_amp;
+                    S.GUI.LED2_amp = 0;
+                case 0
+                    S.GUI.LED1_amp = 0;
+                    S.GUI.LED2_amp = storedLED2_amp;
+            end
+        end
         disp([' *** Trial # ' num2str(currentTrial)]); 
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
