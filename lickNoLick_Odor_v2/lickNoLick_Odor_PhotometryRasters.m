@@ -97,8 +97,8 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                             end
                         end
                     end
-                    phMean = mean(mean(channelData(:,x1:x2)));
-                    phStd = mean(std(channelData(:,x1:x2)));    
+                    phMean = mean(nanmean(channelData(:,x1:x2)));
+                    phStd = mean(nanstd(channelData(:,x1:x2)));    
                     ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
 
                     CData = NaN(nTrials, nSamples * 2); % double width for split, mirrored, dual outcome raster
