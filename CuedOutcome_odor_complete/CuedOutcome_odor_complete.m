@@ -31,38 +31,41 @@ function CuedOutcome_odor_complete
     S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
 
 
-    if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
-        S.GUI.LED1_amp = 1.5;
-        S.GUI.LED2_amp = 0;
-        S.GUI.mu_iti = 6; % 6; % approximate mean iti duration
-        S.GUI.highValueOdorValve = 5; % output pin on the slave arduino switching a particular odor valve
-        S.GUI.lowValueOdorValve = 6;
-        S.GUI.Delay = 1;
-        S.GUI.Epoch = 1;
-        S.GUI.highValuePunishFraction = 0.10;
-        S.GUI.lowValuePunishFraction = 0.55;
-        S.GUI.PunishValveTime = 0.2; %s        
-        S.GUI.Reward = 8;
-        S.GUI.OdorTime = 1; % 0.5s tone, 1s delay        
-        S.GUI.Delay = 1; %  time after odor and before US delivery (or omission)
-        S.GUI.PunishOn = 1;
-%         S.GUI.phRasterScaling = 4;        
+    defaults = {... % If settings file was an empty struct, populate struct with default settings
+        'GUI.LED1_amp', 1.5;...
+        'GUI.LED2_amp', 0;...
+        'GUI.PhotometryOn', 1;...
+        'GUI.mu_iti', 6;... % 6;... % approximate mean iti duration
+        'GUI.highValueOdorValve', 5;... % output pin on the slave arduino switching a particular odor valve
+        'GUI.lowValueOdorValve', 6;...
+        'GUI.Delay', 1;...
+        'GUI.Epoch', 1;...
+        'GUI.highValuePunishFraction', 0.10;...
+        'GUI.lowValuePunishFraction', 0.55;...
+        'GUI.PunishValveTime', 0.2;... %s        
+        'GUI.Reward', 8;...
+        'GUI.OdorTime', 1;... % 0.5s tone, 1s delay        
+        'GUI.Delay', 1;... %  time after odor and before US delivery (or omission)
+        'GUI.PunishOn', 1;...
+%         'GUI.phRasterScaling', 4;...        
         
-        S.NoLick = 0; % forget the nolick
-        S.ITI = []; %ITI duration is set to be exponentially distributed later
-        S.RewardValveCode = 1; % why do I have these? 
-        S.PunishValveCode = 2; % seems uncessary (redundant and currently incorrect)
-        S.currentValve = []; % holds odor valve # for current trial
-        S.RewardValveTime =  GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+        'NoLick', 0;... % forget the nolick
+        'ITI', [];... %ITI duration is set to be exponentially distributed later
+        'RewardValveCode', 1;... % why do I have these? 
+        'PunishValveCode', 2;... % seems uncessary (redundant and currently incorrect)
+        'currentValve', [];... % holds odor valve # for current trial
+        'RewardValveTime',  [];... %GetValveTimes('GUI.Reward, S.RewardValveCode);
 
         % state durations in behavioral protocol
-        S.PreCsRecording  = 4; % After ITI        was 3
-        S.PostUsRecording = 4; % After trial before exit    was 5
+        'PreCsRecording ', 4;... % After ITI        was 3
+        'PostUsRecording', 4;... % After trial before exit    was 5
 
-        S.ToneFreq = 10000; % frequency of neutral tone signaling onset of U.S.
-        S.ToneDuration = 0.1; % duration of neutral tone
-    end
-    MaxTrials = 1000;
+        'ToneFreq', 10000;... % frequency of neutral tone signaling onset of U.S.
+        'ToneDuration', 0.1;... % duration of neutral tone
+    };
+    S = setBpodDefaultSettings(S, defaults);
+
+
     %% Pause and wait for user to edit parameter GUI 
     BpodParameterGUI('init', S);    
     BpodSystem.Pause = 1;
@@ -71,11 +74,13 @@ function CuedOutcome_odor_complete
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
-
+    S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.GUI.OdorTime + S.GUI.Delay + S.PostUsRecording;
     startX = 0 - S.PreCsRecording - S.GUI.OdorTime - S.GUI.Delay; % 0 defined as time from reinforcement
-    S = initPhotometry(S);
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
+        S = initPhotometry(S);
+    end
 
     %% Initialize Sound Stimuli
     SF = 192000; 
@@ -124,14 +129,17 @@ function CuedOutcome_odor_complete
 
 
     %% Init Plots
-    scrsz = get(groot,'ScreenSize'); 
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+        scrsz = get(groot,'ScreenSize'); 
 
-    BpodSystem.ProtocolFigures.NIDAQFig       = figure(...
-        'Position', [25 scrsz(4)*2/3-100 scrsz(3)/2-50  scrsz(4)/3],'Name','NIDAQ plot','numbertitle','off');
-    BpodSystem.ProtocolFigures.NIDAQPanel1     = subplot(2,1,1);
-    BpodSystem.ProtocolFigures.NIDAQPanel2     = subplot(2,1,2);
+        BpodSystem.ProtocolFigures.NIDAQFig       = figure(...
+            'Position', [25 scrsz(4)*2/3-100 scrsz(3)/2-50  scrsz(4)/3],'Name','NIDAQ plot','numbertitle','off');
+        BpodSystem.ProtocolFigures.NIDAQPanel1     = subplot(2,1,1);
+        BpodSystem.ProtocolFigures.NIDAQPanel2     = subplot(2,1,2);
+    end
 
     %% initialize trial types and outcomes
+    MaxTrials = 1000;    
     TrialType = [];
     TrialOutcome = [];  % remember! these can't be left as zeros because they are used as indexes by processAnalysis_Photometry
     OdorValve = [];
@@ -185,31 +193,33 @@ function CuedOutcome_odor_complete
     lickHistPlot.startField = {'PreCsRecording', 'PreCsRecording', 'Us', 'Us', 'Us'};
     lickHistPlot.endField = {'Delay', 'Delay', 'PostUsRecording', 'PostUsRecording', 'PostUsRecording'};
     lickHistPlot.binSpecs = {[-preUs 0 binWidth], [-preUs 0 binWidth], [0 postUs binWidth], [0 postUs binWidth], [0 postUs binWidth]};
-%%  Initialize photometry session analysis plots    
-    BpodSystem.PluginObjects.Photometry.blF = []; %[nTrials, nDemodChannels]
-    BpodSystem.PluginObjects.Photometry.baselinePeriod = [1 S.PreCsRecording];
-    BpodSystem.PluginObjects.Photometry.trialDFF = {}; % 1 x nDemodChannels cell array, fill with nTrials x nSamples dFF matrix for now to make it easy to pull out raster data
-    if S.GUI.PunishOn
-        BpodSystem.ProtocolFigures.phRaster.types = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    else
-        BpodSystem.ProtocolFigures.phRaster.types = {1, 3, 7, 9};
-    end
-    
-    if S.GUI.LED1_amp > 0
-        BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);
-        BpodSystem.ProtocolFigures.phRaster.ax_ch1 = zeros(1, length(BpodSystem.ProtocolFigures.phRaster.types));
-        for i = 1:length(BpodSystem.ProtocolFigures.phRaster.types)
-            BpodSystem.ProtocolFigures.phRaster.ax_ch1(i) = subplot(2, ceil(length(BpodSystem.ProtocolFigures.phRaster.types)/2), i);
-            set(gca, 'YDir', 'Reverse');
-            title(['Type: ' num2str(BpodSystem.ProtocolFigures.phRaster.types{i})]);
+%%  Initialize photometry session analysis plots 
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+        BpodSystem.PluginObjects.Photometry.blF = []; %[nTrials, nDemodChannels]
+        BpodSystem.PluginObjects.Photometry.baselinePeriod = [1 S.PreCsRecording];
+        BpodSystem.PluginObjects.Photometry.trialDFF = {}; % 1 x nDemodChannels cell array, fill with nTrials x nSamples dFF matrix for now to make it easy to pull out raster data
+        if S.GUI.PunishOn
+            BpodSystem.ProtocolFigures.phRaster.types = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        else
+            BpodSystem.ProtocolFigures.phRaster.types = {1, 3, 7, 9};
         end
-    end
-    if S.GUI.LED2_amp > 0
-        BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster', 1);
-        BpodSystem.ProtocolFigures.phRaster.ax_ch2 = zeros(1, length(BpodSystem.ProtocolFigures.phRaster.types));
-        for i = 1:length(BpodSystem.ProtocolFigures.phRaster.types)
-            BpodSystem.ProtocolFigures.phRaster.ax_ch2(i) = subplot(2, ceil(length(BpodSystem.ProtocolFigures.phRaster.types)/2), i);
-            set(gca, 'YDir', 'Reverse');
+
+        if S.GUI.LED1_amp > 0
+            BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);
+            BpodSystem.ProtocolFigures.phRaster.ax_ch1 = zeros(1, length(BpodSystem.ProtocolFigures.phRaster.types));
+            for i = 1:length(BpodSystem.ProtocolFigures.phRaster.types)
+                BpodSystem.ProtocolFigures.phRaster.ax_ch1(i) = subplot(2, ceil(length(BpodSystem.ProtocolFigures.phRaster.types)/2), i);
+                set(gca, 'YDir', 'Reverse');
+                title(['Type: ' num2str(BpodSystem.ProtocolFigures.phRaster.types{i})]);
+            end
+        end
+        if S.GUI.LED2_amp > 0
+            BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster', 1);
+            BpodSystem.ProtocolFigures.phRaster.ax_ch2 = zeros(1, length(BpodSystem.ProtocolFigures.phRaster.types));
+            for i = 1:length(BpodSystem.ProtocolFigures.phRaster.types)
+                BpodSystem.ProtocolFigures.phRaster.ax_ch2(i) = subplot(2, ceil(length(BpodSystem.ProtocolFigures.phRaster.types)/2), i);
+                set(gca, 'YDir', 'Reverse');
+            end
         end
     end
     
@@ -353,22 +363,28 @@ function CuedOutcome_odor_complete
         SendStateMatrix(sma);
 
         %% prep data acquisition
-        preparePhotometryAcq(S);
+        if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode        
+            preparePhotometryAcq(S);
+        end
 
         %% Run state matrix
         RawEvents = RunStateMatrix();  % Blocking!
         
         %% Stop Photometry session
-        stopPhotometryAcq;
+        if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode        
+            stopPhotometryAcq;
+        end
         
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
             %% Process NIDAQ session
-            processPhotometryAcq(currentTrial);
-            %% online plotting
-            try
-                processPhotometryOnline(currentTrial);
-                updatePhotometryPlot(startX);    
-            end
+            if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode            
+                processPhotometryAcq(currentTrial);
+                %% online plotting
+                try
+                    processPhotometryOnline(currentTrial);
+                    updatePhotometryPlot(startX);    
+                catch
+                end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
@@ -397,39 +413,41 @@ function CuedOutcome_odor_complete
                     lickHistPlot.zeroField{i}, lickHistPlot.startField{i}, lickHistPlot.endField{i}, linecolors(i), [], gca);
             end
             %% update photometry rasters
-            try
-                displaySampleRate = nidaq.sample_rate / nidaq.online.decimationFactor;
-                x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);
-                x2 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(2), displaySampleRate, 0);        
-                types = BpodSystem.ProtocolFigures.phRaster.types;
-    %             lookupFactor = S.GUI.phRasterScaling;
-                lookupFactor = 4;
-                xData = [min(nidaq.online.trialXData) max(nidaq.online.trialXData)] + startX;
-                for i = 1:length(types)
-                    if S.GUI.LED1_amp > 0
-                        phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));
-                        phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));    
-                        ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
-                        trials = onlineFilterTrials(types{i},[],[]);
-                        nidaq.online.trialXData
-                        CData = BpodSystem.PluginObjects.Photometry.trialDFF{1}(trials, :);
-                        image('XData', xData,...
-                            'YData', [1 size(CData, 1)],...
-                            'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
-                        set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+            if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode            
+                try
+                    displaySampleRate = nidaq.sample_rate / nidaq.online.decimationFactor;
+                    x1 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(1), displaySampleRate, 0);
+                    x2 = bpX2pnt(BpodSystem.PluginObjects.Photometry.baselinePeriod(2), displaySampleRate, 0);        
+                    types = BpodSystem.ProtocolFigures.phRaster.types;
+        %             lookupFactor = S.GUI.phRasterScaling;
+                    lookupFactor = 4;
+                    xData = [min(nidaq.online.trialXData) max(nidaq.online.trialXData)] + startX;
+                    for i = 1:length(types)
+                        if S.GUI.LED1_amp > 0
+                            phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));
+                            phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{1}(:,x1:x2)));    
+                            ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
+                            trials = onlineFilterTrials(types{i},[],[]);
+                            nidaq.online.trialXData
+                            CData = BpodSystem.PluginObjects.Photometry.trialDFF{1}(trials, :);
+                            image('XData', xData,...
+                                'YData', [1 size(CData, 1)],...
+                                'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+                        end
+                        if S.GUI.LED2_amp > 0
+                            phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));
+                            phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));    
+                            ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i);
+                            trials = onlineFilterTrials(types{i},[],[]);
+                            nidaq.online.trialXData
+                            CData = BpodSystem.PluginObjects.Photometry.trialDFF{2}(trials, :);
+                            image('XData', xData,...
+                                'YData', [1 size(CData, 1)],...
+                                'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                            set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
+                        end                
                     end
-                    if S.GUI.LED2_amp > 0
-                        phMean = mean(mean(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));
-                        phStd = mean(std(BpodSystem.PluginObjects.Photometry.trialDFF{2}(:,x1:x2)));    
-                        ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i);
-                        trials = onlineFilterTrials(types{i},[],[]);
-                        nidaq.online.trialXData
-                        CData = BpodSystem.PluginObjects.Photometry.trialDFF{2}(trials, :);
-                        image('XData', xData,...
-                            'YData', [1 size(CData, 1)],...
-                            'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
-                        set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd]);
-                    end                
                 end
             end
             
@@ -440,8 +458,10 @@ function CuedOutcome_odor_complete
         end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
-            fclose(valveSlave);
-            delete(valveSlave);
+            if ~BpodSystem.EmulatorMode            
+                fclose(valveSlave);
+                delete(valveSlave);
+            end
             return
         end 
     end

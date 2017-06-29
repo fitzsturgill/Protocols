@@ -67,9 +67,7 @@ function lickNoLick_Odor_v2
     BpodParameterGUI('init', S);    
     BpodSystem.Pause = 1;
     HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
-    S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
-    
-
+    S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin    
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
@@ -346,7 +344,6 @@ function lickNoLick_Odor_v2
         end
         %% Run state matrix
         RawEvents = RunStateMatrix();  % Blocking!
-        tic;
         %% Stop Photometry session
         if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             stopPhotometryAcq;   
@@ -355,11 +352,13 @@ function lickNoLick_Odor_v2
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
             %% Process NIDAQ session
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode            
-                processPhotometryAcq(currentTrial);
-            %% online plotting
-                processPhotometryOnline(currentTrial);
-                updatePhotometryPlot('update', startX);  
-                xlabel('Time from cue (s)');
+                try % in case photometry hicupped
+                    processPhotometryAcq(currentTrial);
+                %% online plotting
+                    processPhotometryOnline(currentTrial);
+                    updatePhotometryPlot('update', startX);  
+                    xlabel('Time from cue (s)');
+                end
             end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
@@ -427,17 +426,19 @@ function lickNoLick_Odor_v2
                 bty = [blockTransitions; blockTransitions;];
             end
             %% update photometry rasters
-            if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
-                lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
-                if any(blockTransitions) % block transition lines
-                    if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
-                        for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
-                            plot(btx2, bty, '-r', 'Parent', ah);
+            try % in case photometry hicupped
+                if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
+                    lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
+                    if any(blockTransitions) % block transition lines
+                        if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
+                            for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
+                                plot(btx2, bty, '-r', 'Parent', ah);
+                            end
                         end
-                    end
-                    if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch2)
-                        for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch2(2:end)
-                            plot(btx2, bty, '-r', 'Parent', ah);
+                        if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch2)
+                            for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch2(2:end)
+                                plot(btx2, bty, '-r', 'Parent', ah);
+                            end
                         end
                     end
                 end
