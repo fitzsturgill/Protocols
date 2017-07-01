@@ -12,7 +12,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
         'XLim', 0;...
         };
     [ls, ~] = parse_args(defaults, varargin{:}); % combine default and passed (via varargin) parameter settings
-
+    channelsOn = nidaq.channelsOn;
     Op = lower(Op);
     switch Op
         case 'init' 
@@ -25,7 +25,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
             BpodSystem.ProtocolFigures.phRaster.odorsToPlot = ls.odorsToPlot;
             BpodSystem.ProtocolFigures.phRaster.switchParameterCriterion = ls.switchParameterCriterion;
             
-            if BpodSystem.ProtocolSettings.GUI.LED1_amp > 0
+            if sum(channelsOn == 1)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
                 nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
@@ -45,7 +45,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = [];
                 BpodSystem.ProtocolFigures.phRaster.ax_ch1 = [];
             end
-            if BpodSystem.ProtocolSettings.GUI.LED2_amp > 0
+            if sum(channelsOn == 2)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
                 nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    

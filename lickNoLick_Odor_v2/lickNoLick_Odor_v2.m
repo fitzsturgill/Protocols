@@ -25,10 +25,13 @@ function lickNoLick_Odor_v2
         'GUI.UsePulsePal', 1;...
         
         'GUI.BlockFcn', 'pavlovian_reversals_blocks';...
-        'GUIMeta.BlockFcn.Style', 'editText'
+        'GUIMeta.BlockFcn.Style', 'editText';...
+        'GUI.PhotometryRasterFcn', 'lickNoLick_Odor_PhotometryRasters';...
+        'GUIMeta.PhotometryRasterFcn.Style', 'editText';...
         'GUI.Block', 1;...
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
+        'GUI.Odor3Valve', 7;...
 %         'GUI.Hit_RewardFraction', 0.7;...
 %         'GUI.FA_RewardFraction', 0.3;...
 %         'GUI.Hit_PunishFraction', 0;...
@@ -80,6 +83,9 @@ function lickNoLick_Odor_v2
         error('** block function error ***');
     end
     
+    %% init photometry raster function handle
+    prfh = str2func(S.GUI.PhotometryRasterFcn);
+    
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.OdorTime + S.GUI.AnswerDelay + S.GUI.Answer + S.PostUsRecording;
     startX = 0 - S.PreCsRecording; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
@@ -89,12 +95,13 @@ function lickNoLick_Odor_v2
     %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         updatePhotometryPlot('init');
-        lickNoLick_Odor_PhotometryRasters('init', 'baselinePeriod', [1 S.PreCsRecording])
+        prfh('init', 'baselinePeriod', [1 S.PreCsRecording])
     end
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 2, 1);
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 2, 2);
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 3, 1);
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 3, 2);
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor3 = subplot(1, 3, 3);
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
         SF = 192000;
@@ -428,7 +435,7 @@ function lickNoLick_Odor_v2
             %% update photometry rasters
             try % in case photometry hicupped
                 if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
-                    lickNoLick_Odor_PhotometryRasters('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
+                    prfh('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
                     if any(blockTransitions) % block transition lines
                         if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
                             for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
