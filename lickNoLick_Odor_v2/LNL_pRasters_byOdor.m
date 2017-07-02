@@ -7,7 +7,7 @@ function LNL_pRasters_byOdor(Op, varargin)
         'lookupFactor', 4;... % 1 - 3 second into recording
         'phRStamp', 6;... % # pixels to push high or low to indicate alternative reinforcement outcomes
         'decimationFactor', nidaq.online.decimationFactor;...
-        'odorsToPlot', [1 2];...
+        'odorsToPlot', [1 2 3];...
         'XLim', 0;...
         };
     [ls, ~] = parse_args(defaults, varargin{:}); % combine default and passed (via varargin) parameter settings
@@ -28,7 +28,7 @@ function LNL_pRasters_byOdor(Op, varargin)
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
                 params.cellmargin = [0.02 0.02 0.02 0.02];   
                 params.matpos = [0 0 1 1];        
-                hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));      
+                hAx = axesmatrix(1, nAxes, 1:nAxes, params, gcf);      
                 set(hAx, 'NextPlot', 'Add');
                 BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
                 set(hAx, 'YDir', 'Reverse');
@@ -42,7 +42,7 @@ function LNL_pRasters_byOdor(Op, varargin)
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
                 params.cellmargin = [0.02 0.02 0.02 0.02];   
                 params.matpos = [0 0 1 1];        
-                hAx = horzcat(hAx, axesmatrix(1, nAxes, 1:nAxes, params, gcf));      
+                hAx = axesmatrix(1, nAxes, 1:nAxes, params, gcf);      
                 set(hAx, 'NextPlot', 'Add');
                 BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
                 set(hAx, 'YDir', 'Reverse');
@@ -58,7 +58,7 @@ function LNL_pRasters_byOdor(Op, varargin)
 
                
             nTrials = length(BpodSystem.Data.TrialTypes);
-            odorsToPlot = BpodSystem.ProtocolFigxdures.phRaster.odorsToPlot;
+            odorsToPlot = BpodSystem.ProtocolFigures.phRaster.odorsToPlot;
             phRStamp = BpodSystem.ProtocolFigures.phRaster.phRStamp;
             lookupFactor = BpodSystem.ProtocolFigures.phRaster.lookupFactor;
             for i = 1:length(odorsToPlot)
