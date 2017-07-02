@@ -83,7 +83,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
                 neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
                 punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
-                if BpodSystem.Data.Settings.GUI.LED1_amp > 0
+                if sum(channelsOn == 1)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
                     nSamples = size(channelData, 2);
                     if i == 1
@@ -120,7 +120,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     axis(ax, 'tight');
                 end
                 
-                if BpodSystem.Data.Settings.GUI.LED2_amp > 0
+                if sum(channelsOn == 2)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
                     nSamples = size(channelData, 2);
                     if i == 1

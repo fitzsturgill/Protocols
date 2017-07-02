@@ -63,84 +63,50 @@ function LNL_pRasters_byOdor(Op, varargin)
             lookupFactor = BpodSystem.ProtocolFigures.phRaster.lookupFactor;
             for i = 1:length(odorsToPlot)
                 thisOdorIndex = odorsToPlot(i);
-                outcome_left = onlineFilterTrials_v2('OdorValveIndex', thisOdorIndex,'TrialOutcome', [-1, 0]); % miss or false alarm            
-                outcome_right = onlineFilterTrials_v2('OdorValveIndex', thisOdorIndex,'TrialOutcome', [1, 2]); % hit or correct rejection
                 rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
                 neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
                 punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
-                if BpodSystem.Data.Settings.GUI.LED1_amp > 0
+                if sum(channelsOn == 1)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
                     nSamples = size(channelData, 2);
-                    if i == 1
-                        set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch1, 'YData', 1:nTrials, 'XData', BpodSystem.Data.SwitchParameter);
-                        set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1, 'YData', 1:nTrials, 'XData', repmat(ls.switchParameterCriterion, 1, nTrials));            
-                        if ~isnan(ls.switchParameterCriterion)
-                            set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.SwitchParameter(end) + 1, ls.switchParameterCriterion + 1)]);
-                        else
-                            if ~isnan(BpodSystem.Data.SwitchParameter(end))
-                                set(BpodSystem.ProtocolFigures.phRaster.ax_ch1(1), 'YLim', [0 nTrials], 'XLim', [0 BpodSystem.Data.SwitchParameter(end) + 0.1]);
-                            end
-                        end
-                    end
+                    
                     phMean = mean(nanmean(channelData(:,x1:x2)));
                     phStd = mean(nanstd(channelData(:,x1:x2)));    
-                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i + 1); % phRaster axes start at i + 1
+                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
 
-                    CData = NaN(nTrials, nSamples * 2); % double width for split, mirrored, dual outcome raster
-                    CData(outcome_left, (1:nSamples)) = fliplr(channelData(outcome_left, :));
-                    CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(rewardTrials & outcome_left, (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(neutralTrials & outcome_left, (nSamples - phRStamp + 1):nSamples) = 0;            
-                    CData(punishTrials & outcome_left, (nSamples - phRStamp + 1):nSamples) = -255;            
-                    CData(rewardTrials & outcome_right, (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(neutralTrials & outcome_right, (nSamples+1):(nSamples + phRStamp)) = 0;            
-                    CData(punishTrials & outcome_right, (nSamples+1):(nSamples + phRStamp)) = -255;            
+                    channelData(rewardTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+                    channelData(rewardTrials, 1:phRStamp) = 0; 
+                    channelData(rewardTrials, 1:phRStamp) = -255; 
                     
-                    image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
-                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                    image('YData', [1 size(channelData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
+                        'CData', channelData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
                     axis(ax, 'tight');
                 end
                 
-                if BpodSystem.Data.Settings.GUI.LED2_amp > 0
+                if sum(channelsOn == 2)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
                     nSamples = size(channelData, 2);
-                    if i == 1
-                        set(BpodSystem.ProtocolFigures.phRaster.nCorrectLine_ch2, 'YData', 1:nTrials, 'XData', BpodSystem.Data.SwitchParameter);
-                        set(BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch2, 'YData', 1:nTrials, 'XData', repmat(ls.switchParameterCriterion, 1, nTrials));            
-                        if ~isnan(ls.switchParameterCriterion)
-                            set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 max(BpodSystem.Data.SwitchParameter(end) + 1, ls.switchParameterCriterion + 1)]);
-                        else
-                            if ~isnan(BpodSystem.Data.SwitchParameter(end))
-                                set(BpodSystem.ProtocolFigures.phRaster.ax_ch2(1), 'YLim', [0 nTrials], 'XLim', [0 BpodSystem.Data.SwitchParameter(end) + 0.1]);
-                            end
-                        end
-                    end
-                    phMean = mean(mean(channelData(:,x1:x2)));
-                    phStd = mean(std(channelData(:,x1:x2)));    
-                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i + 1); % phRaster axes start at i + 1
+                    
+                    phMean = mean(nanmean(channelData(:,x1:x2)));
+                    phStd = mean(nanstd(channelData(:,x1:x2)));    
+                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
 
-                    CData = NaN(nTrials, nSamples * 2); % double width for split, mirrored, dual outcome raster
-                    CData(outcome_left, (1:nSamples)) = fliplr(channelData(outcome_left, :));
-                    CData(outcome_right, (nSamples+1):end) = channelData(outcome_right, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(rewardTrials & outcome_left, (nSamples - phRStamp + 1):nSamples) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(neutralTrials & outcome_left, (nSamples - phRStamp + 1):nSamples) = 0;            
-                    CData(punishTrials & outcome_left, (nSamples - phRStamp + 1):nSamples) = -255;            
-                    CData(rewardTrials & outcome_right, (nSamples+1):(nSamples + phRStamp)) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(neutralTrials & outcome_right, (nSamples+1):(nSamples + phRStamp)) = 0;            
-                    CData(punishTrials & outcome_right, (nSamples+1):(nSamples + phRStamp)) = -255;                   
-
-                    image('YData', [1 size(CData, 1)], 'XData', ls.XLim,...
-                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                    channelData(rewardTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+                    channelData(rewardTrials, 1:phRStamp) = 0; 
+                    channelData(rewardTrials, 1:phRStamp) = -255; 
+                    
+                    image('YData', [1 size(channelData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
+                        'CData', channelData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
                     axis(ax, 'tight');
-                end                
+                end
                 
 
              

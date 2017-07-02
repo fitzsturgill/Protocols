@@ -435,6 +435,9 @@ function lickNoLick_Odor_v2
             %% update photometry rasters
             try % in case photometry hicupped
                 if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
+                    % Note that switchParameterCriterion not used for
+                    % LNL_pRasters_byOdor, but doesn't matter when
+                    % supplied via varargin
                     prfh('Update', 'switchParameterCriterion', switchParameterCriterion, 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
                     if any(blockTransitions) % block transition lines
                         if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
