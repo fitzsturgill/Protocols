@@ -44,7 +44,7 @@ function LNL_pRasters_byOdor(Op, varargin)
                 params.matpos = [0 0 1 1];        
                 hAx = axesmatrix(1, nAxes, 1:nAxes, params, gcf);      
                 set(hAx, 'NextPlot', 'Add');
-                BpodSystem.ProtocolFigures.phRaster.ax_ch1 = hAx;
+                BpodSystem.ProtocolFigures.phRaster.ax_ch2 = hAx;
                 set(hAx, 'YDir', 'Reverse');
             else
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = [];
@@ -80,8 +80,8 @@ function LNL_pRasters_byOdor(Op, varargin)
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
                     CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 0; 
-                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = -255; 
+                    CData(neutralTrials & thisOdorTrials, 1:phRStamp) = 0; 
+                    CData(punishTrials & thisOdorTrials, 1:phRStamp) = -255; 
                     
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
@@ -96,15 +96,15 @@ function LNL_pRasters_byOdor(Op, varargin)
                     
                     phMean = mean(nanmean(channelData(:,x1:x2)));
                     phStd = mean(nanstd(channelData(:,x1:x2)));    
-                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
+                    ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i);
                     
                     CData = NaN(nTrials, nSamples);
                     CData(thisOdorTrials, :) = channelData(thisOdorTrials, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
                     CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 0; 
-                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = -255; 
+                    CData(neutralTrials & thisOdorTrials, 1:phRStamp) = 0; 
+                    CData(punishTrials & thisOdorTrials, 1:phRStamp) = -255; 
                     
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
