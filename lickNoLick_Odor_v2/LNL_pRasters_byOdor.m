@@ -63,6 +63,7 @@ function LNL_pRasters_byOdor(Op, varargin)
             lookupFactor = BpodSystem.ProtocolFigures.phRaster.lookupFactor;
             for i = 1:length(odorsToPlot)
                 thisOdorIndex = odorsToPlot(i);
+                thisOdorTrials = onlineFilterTrials_v2('OdorValveIndex', thisOdorIndex); % miss or false alarm   
                 rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
                 neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
                 punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
@@ -73,15 +74,17 @@ function LNL_pRasters_byOdor(Op, varargin)
                     phMean = mean(nanmean(channelData(:,x1:x2)));
                     phStd = mean(nanstd(channelData(:,x1:x2)));    
                     ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
-
+                    
+                    CData = NaN(nTrials, nSamples);
+                    CData(thisOdorTrials, :) = channelData(thisOdorTrials, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    channelData(rewardTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-                    channelData(rewardTrials, 1:phRStamp) = 0; 
-                    channelData(rewardTrials, 1:phRStamp) = -255; 
+                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 0; 
+                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = -255; 
                     
-                    image('YData', [1 size(channelData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
-                        'CData', channelData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                    image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
+                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
                     axis(ax, 'tight');
@@ -94,15 +97,17 @@ function LNL_pRasters_byOdor(Op, varargin)
                     phMean = mean(nanmean(channelData(:,x1:x2)));
                     phStd = mean(nanstd(channelData(:,x1:x2)));    
                     ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
-
+                    
+                    CData = NaN(nTrials, nSamples);
+                    CData(thisOdorTrials, :) = channelData(thisOdorTrials, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    channelData(rewardTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-                    channelData(rewardTrials, 1:phRStamp) = 0; 
-                    channelData(rewardTrials, 1:phRStamp) = -255; 
+                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 0; 
+                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = -255; 
                     
-                    image('YData', [1 size(channelData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
-                        'CData', channelData, 'CDataMapping', 'Scaled', 'Parent', ax);
+                    image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
+                        'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
                     set(ax, 'CLim', [phMean - lookupFactor * phStd, phMean + lookupFactor * phStd],...
                         'YTickLabel', {});
                     axis(ax, 'tight');
