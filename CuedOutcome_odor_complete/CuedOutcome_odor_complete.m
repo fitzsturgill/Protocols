@@ -385,6 +385,7 @@ function CuedOutcome_odor_complete
                     updatePhotometryPlot(startX);    
                 catch
                 end
+            end
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
