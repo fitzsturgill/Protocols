@@ -21,7 +21,7 @@ function PhotoStim_multi
 % PhotoStim w/ multiple frequencies for optogenetic tagging
 
 global BpodSystem
-PulsePal;
+PulsePal('COM5');
 
 %% Define parameters
 S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
@@ -88,7 +88,7 @@ for currentTrial = 1:MaxTrials
     sma = AddState(sma, 'Name', 'ITI', ...
         'Timer', 10,...
         'StateChangeConditions', {'Tup', 'exit'},...
-        'OutputActions', {});  
+        'OutputActions', {}); 
     
     SendStateMatrix(sma);
     RawEvents = RunStateMatrix;
@@ -100,13 +100,15 @@ for currentTrial = 1:MaxTrials
         SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
     end
     
-%     if BpodSystem.Status.BeingUsed == 0
-%         return
-%     end
+    if BpodSystem.BeingUsed == 0
+        RunProtocol('Stop');
+        return
+    end
     
     % close the procotol
     if currentTrial == MaxTrials
         RunProtocol('Stop');
+        return
     end
     
 end
