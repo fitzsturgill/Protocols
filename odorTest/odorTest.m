@@ -37,7 +37,7 @@ function odorTest
         end
             
         slaveResponse = updateValveSlave(valveSlave, OdorValve); 
-        if isempty(slaveResponse);
+        if isempty(slaveResponse)
             disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
             continue
         else
@@ -62,10 +62,14 @@ function odorTest
             'Timer', 0.4,...
             'StateChangeConditions', {'Tup', 'Odor'},...
             'OutputActions', {});       
+%         sma = AddState(sma, 'Name', 'Odor', ... 
+%             'Timer', 1,...
+%             'StateChangeConditions', {'Tup','exit'},...
+%             'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});        
         sma = AddState(sma, 'Name', 'Odor', ... 
-            'Timer', 1,...
+            'Timer', 2,...
             'StateChangeConditions', {'Tup','exit'},...
-            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});        
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', 2});  
         
         %%
         SendStateMatrix(sma);        
@@ -79,4 +83,5 @@ function odorTest
                 delete(valveSlave);
             end
             return
-        end         
+        end     
+    end

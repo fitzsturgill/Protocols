@@ -27,7 +27,8 @@ PulsePal('COM5');
 S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
 
 MaxTrials = 160;
-TrialTypes=repmat([1 2 3 4 5],1,ceil(MaxTrials/5));
+% TrialTypes=repmat([1 2 3 4 5],1,ceil(MaxTrials/5));
+TrialTypes = repmat([2], 1, MaxTrials); % kludge to just do 10 hz stimulation
 BpodSystem.Data.TrialTypes = []; % The trial type of each trial completed will be added here.
 BpodSystem.Data.PulsePalProgram = {}; % the pulse pal program used will be deposited here
 
@@ -51,7 +52,10 @@ for currentTrial = 1:MaxTrials
            load(fullfile(BpodSystem.BpodUserPath, 'Protocols', 'PhotoStim_multi', 'LightTrain_80hz_1ms.mat'));
            BpodSystem.Data.PulsePalProgram{currentTrial} = 'LightTrain_80hz_1ms';           
     end
+
+%     load(fullfile(BpodSystem.BpodUserPath, 'Protocols', 'PhotoStim_multi', 'test.mat'));
     disp(['*** Trial # ' num2str(currentTrial) ' Program: ' BpodSystem.Data.PulsePalProgram{currentTrial} ' ***']);
+%     disp(['*** Trial # ' num2str(currentTrial)]);
     ProgramPulsePal(ParameterMatrix);
     
    % S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
@@ -65,6 +69,14 @@ for currentTrial = 1:MaxTrials
         'Timer', 0,...
         'StateChangeConditions', {'Tup', BpodSystem.Data.PulsePalProgram{currentTrial}},...
         'OutputActions', {});
+%     sma = AddState(sma, 'Name', 'DeliverStimulus', ...
+%         'Timer', 0,...
+%         'StateChangeConditions', {'Tup', 'test'},...
+%         'OutputActions', {});
+%     sma = AddState(sma, 'Name', 'test', ... % individual states for neurlynx syncing purposes (unique 
+%         'Timer', 0,...
+%         'StateChangeConditions', {'Tup', 'ITI'},...
+%         'OutputActions', {'BNCState',2});
     sma = AddState(sma, 'Name', 'LightTrain_5hz_1ms', ... % individual states for neurlynx syncing purposes (unique 
         'Timer', 0,...
         'StateChangeConditions', {'Tup', 'ITI'},...
@@ -92,6 +104,7 @@ for currentTrial = 1:MaxTrials
     
     SendStateMatrix(sma);
     RawEvents = RunStateMatrix;
+
     if ~isempty(fieldnames(RawEvents)) % If trial data was returned
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % Computes trial events from raw data
         % BpodSystem.Data = BpodNotebook(BpodSystem.Data); % Sync with Bpod notebook plugin
