@@ -223,7 +223,7 @@ function lickNoLick_Odor_v2
         TrialType = pickRandomTrials_blocks(S.Block.Table);
         switch S.Block.Table.CS(TrialType)
             case 0
-                OdorValve = 0; % ommission
+                OdorValve = 0; % uncued
             case 1
                 OdorValve = S.GUI.Odor1Valve;
             case 2
