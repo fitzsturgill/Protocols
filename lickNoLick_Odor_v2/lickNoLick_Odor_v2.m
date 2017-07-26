@@ -223,7 +223,7 @@ function lickNoLick_Odor_v2
         TrialType = pickRandomTrials_blocks(S.Block.Table);
         switch S.Block.Table.CS(TrialType)
             case 0
-                OdorValve = 0; % ommission
+                OdorValve = 0; % uncued
             case 1
                 OdorValve = S.GUI.Odor1Valve;
             case 2
@@ -433,7 +433,7 @@ function lickNoLick_Odor_v2
                 bty = [blockTransitions; blockTransitions;];
             end
             %% update photometry rasters
-%             try % in case photometry hicupped
+            try % in case photometry hicupped
                 if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
                     % Note that switchParameterCriterion not used for
                     % LNL_pRasters_byOdor, but doesn't matter when
@@ -452,7 +452,7 @@ function lickNoLick_Odor_v2
                         end
                     end
                 end
-%             end
+            end
             
             %% lick rasters by odor   
 %             bpLickRaster2(SessionData, filtArg, zeroField, figName, ax)
