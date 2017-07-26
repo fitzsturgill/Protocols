@@ -226,7 +226,7 @@ function CuedOutcome_odor_complete
     %% Main trial loop
     for currentTrial = 1:MaxTrials
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin 
-        
+        BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         %% determine trial type on the fly
         pfh = S.GUI.highValuePunishFraction;
         pfl = S.GUI.lowValuePunishFraction;
