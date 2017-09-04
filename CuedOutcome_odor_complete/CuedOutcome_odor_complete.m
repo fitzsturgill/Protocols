@@ -233,15 +233,15 @@ function CuedOutcome_odor_complete
         if S.GUI.PunishOn
             typeMatrix = [...
                 % high value odor
-                1, 0.425 * (1 - pfh - 0.1);... %  reward
-                2, 0.425 * pfh;...  % punish
-                3, 0.425 * 0.1;... % omit- signal with neutral cue (tone)
+                1, 0.4 * (1 - pfh - 0.1);... %  reward
+                2, 0.4 * pfh;...  % punish
+                3, 0.4 * 0.1;... % omit- signal with neutral cue (tone)
                 % low value odor
-                4, 0.425 * (1 - pfl - 0.1);... %  reward
-                5, 0.425 * pfl;... % punish
-                6, 0.425 * 0.1;... % omit
+                4, 0.4 * (1 - pfl - 0.1);... %  reward
+                5, 0.4 * pfl;... % punish
+                6, 0.4 * 0.1;... % omit
                 % uncued
-                7, 0.05;... % reward
+                7, 0.1;... % reward
                 8, 0.05;... % punish
                 9, 0.05;... % neutral
                 ];
