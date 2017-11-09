@@ -101,3 +101,32 @@ S.LinkTo = 0;
 S.LinkToFcn = '';
 
 blocks{end + 1} = S;
+
+
+%% block 8 (initial contingency, manual control, plus novel CS+)
+S = struct(); ST = struct();
+ST.BlockNumber = [8; 8; 8; 8; 8; 8]; % fluff
+ST.P = [1/3 * 0.8; 1/3 * 0.2; 1/3 * 0.5; 1/3 * 0.5; 1/3 * 0.8; 1/3 * 0.2];
+ST.CS = [1; 1; 2; 2; 3; 3]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = [1; 1; -1; -1; 1; 1]; % whether CS is considered CS+ and licks are counted as "hits"
+ST.US = {'Reward'; 'Neutral'; 'Punish'; 'Neutral'; 'Reward'; 'Neutral'};   % Reward
+ST.Instrumental = [0; 0; 0; 0; 0; 0];
+S.Table = struct2table(ST);
+S.LinkTo = 0;
+S.LinkToFcn = '';
+
+blocks{end + 1} = S;
+
+%% block 9 (reversed, manual control, plus novel CS+)
+S = struct(); ST = struct();
+ST.BlockNumber = [9; 9; 9; 9; 9; 9]; % fluff
+ST.P = [1/3 * 0.8; 1/3 * 0.2; 1/3 * 0.5; 1/3 * 0.5; 1/3 * 0.8; 1/3 * 0.2];
+ST.CS = [2; 2; 1; 1; 3; 3]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = [1; 1; -1; -1; 1; 1]; % whether CS is considered CS+ and licks are counted as "hits"
+ST.US = {'Reward'; 'Neutral'; 'Punish'; 'Neutral'; 'Reward'; 'Neutral'};   % Reward
+ST.Instrumental = [0; 0; 0; 0; 0; 0];
+S.Table = struct2table(ST);
+S.LinkTo = 0;
+S.LinkToFcn = '';
+
+blocks{end + 1} = S;
