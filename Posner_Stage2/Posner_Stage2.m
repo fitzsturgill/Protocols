@@ -10,7 +10,7 @@ function Posner_Stage2
     
     if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
         S.GUI.RewardAmount = 5; %ul
-        S.GUI.Punish = 6; % How long the mouse must wait in the goal port for reward to be delivered
+        S.GUI.Punish = 6; % time out period prior to ITI, negative punishment in classical conditioning terms
 
         S.GUI.BaselineIntensity = 2.5;    
         S.GUI.CueLightIntensity = 2.5; % value added to baseline intensity to determine cue light intensity

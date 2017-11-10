@@ -21,7 +21,7 @@ global BpodSystem
 S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
 if isempty(fieldnames(S))  % If settings file was an empty struct, populate struct with default settings
     S.GUI.RewardAmount = 5; %ul
-    S.GUI.PortOutRegDelay =0.2; % How long the mouse must remain out before poking back in
+    S.GUI.PortOutRegDelay =0.2; % grace period for drinking
     S.GUI.BaselineIntensity = 2.5;
     S.GUI.LightIntensity = 255;
     S.GUI.SessionStartDelay =1;
