@@ -32,6 +32,8 @@ function lickNoLick_Odor_v2
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
         'GUI.Odor3Valve', 7;...
+        'GUI.neutralToneOn', 1;...
+        'GUIMeta.neutralToneOn.Style', 'checkbox';...           
 %         'GUI.Hit_RewardFraction', 0.7;...
 %         'GUI.FA_RewardFraction', 0.3;...
 %         'GUI.Hit_PunishFraction', 0;...
@@ -239,6 +241,13 @@ function lickNoLick_Odor_v2
             noLickOutcome = 'Neutral';
         end
         
+        
+        if S.GUI.neutralToneOn
+            neutralCode = 1;
+        else
+            neutralCode = 0;
+        end
+        
         %% update odor valve number for current trial
         if ~BpodSystem.EmulatorMode
             slaveResponse = updateValveSlave(valveSlave, OdorValve); 
@@ -335,7 +344,7 @@ function lickNoLick_Odor_v2
         sma = AddState(sma,'Name', 'Neutral', ...
             'Timer', 0,...
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', {'SoftCode', 1});
+            'OutputActions', {'SoftCode', neutralCode});
         sma = AddState(sma, 'Name','PostUsRecording',...
             'Timer',4,...   % should end with global timer 2 but in case global timer 2 misfires, exit trial via 4 second timer
             'StateChangeConditions',{'GlobalTimer2_End','exit', 'Tup', 'exit'},...
@@ -458,14 +467,16 @@ function lickNoLick_Odor_v2
 %             bpLickRaster2(SessionData, filtArg, zeroField, figName, ax)
             bpLickRaster2({'OdorValveIndex', 1}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'session'); hold on;
             bpLickRaster2({'OdorValveIndex', 2}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
+            bpLickRaster2({'OdorValveIndex', 3}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor            
             if any(blockTransitions)
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); % just make 
                 drawnow;
             end             
-            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2], 'XLim', [startX, startX + S.nidaq.duration]);
+            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2 BpodSystem.ProtocolFigures.lickRaster.AxOdor3], 'XLim', [startX, startX + S.nidaq.duration]);
             xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'Time from cue (s)');
             xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'Time from cue (s)');
+            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'Time from cue (s)');
             
             
             
