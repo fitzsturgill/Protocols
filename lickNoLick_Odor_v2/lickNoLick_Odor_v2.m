@@ -252,7 +252,7 @@ function lickNoLick_Odor_v2
         if ~BpodSystem.EmulatorMode
             slaveResponse = updateValveSlave(valveSlave, OdorValve); 
             S.currentValve = slaveResponse;
-            if isempty(slaveResponse);
+            if isempty(slaveResponse)
                 disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
                 continue
             else

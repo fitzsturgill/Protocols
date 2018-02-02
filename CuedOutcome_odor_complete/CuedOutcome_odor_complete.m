@@ -47,12 +47,13 @@ function CuedOutcome_odor_complete
         'GUI.OdorTime', 1;... % 0.5s tone, 1s delay        
         'GUI.Delay', 1;... %  time after odor and before US delivery (or omission)
         'GUI.PunishOn', 1;...
-%         'GUI.phRasterScaling', 4;...        
+        'GUI.neutralToneOn', 1;... % select to NOT signal omissions with neutral tone
+        'GUIMeta.neutralToneOn.Style', 'checkbox';...            
         
         'NoLick', 0;... % forget the nolick
         'ITI', [];... %ITI duration is set to be exponentially distributed later
-        'RewardValveCode', 1;... % why do I have these? 
-        'PunishValveCode', 2;... % seems uncessary (redundant and currently incorrect)
+        'RewardValveCode', 1;... 
+        'PunishValveCode', 2;... 
         'currentValve', [];... % holds odor valve # for current trial
         'RewardValveTime',  [];... %GetValveTimes('GUI.Reward, S.RewardValveCode);
 
@@ -256,6 +257,11 @@ function CuedOutcome_odor_complete
                 ];
         end        
         TrialType = defineRandomizedTrials(typeMatrix, 1);
+        if S.GUI.neutralToneOn
+            neutralCode = 1;
+        else
+            neutralCode = 0;
+        end            
         %% define outcomes, sound durations, and valve times
 
         % determine outcomes
@@ -272,7 +278,7 @@ function CuedOutcome_odor_complete
         else % implicitly TrialType must be one of [3 6 9] 
             TrialOutcome = 3; % omit
             Us = 'Omit';        
-            UsAction = {'SoftCode', 1};
+            UsAction = {'SoftCode', neutralCode};
             UsTime = (S.RewardValveTime + S.GUI.PunishValveTime)/2; % split the difference, both should be very short            
         end
 
@@ -303,11 +309,12 @@ function CuedOutcome_odor_complete
 %         set(outcomeAxes, 'XLim', [max(0, currentTrial - outcomeSpan), currentTrial]);
 %         set(placeHolder, 'XData', [currentTrial currentTrial]);   
         set(outcomeAxes, 'YLim', [0 10], 'YGrid', 'on');
-        
+
+    
         % update odor valve number for current trial
         slaveResponse = updateValveSlave(valveSlave, OdorValve); 
         S.currentValve = slaveResponse;
-        if isempty(slaveResponse);
+        if isempty(slaveResponse)
             disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
             continue
         else
