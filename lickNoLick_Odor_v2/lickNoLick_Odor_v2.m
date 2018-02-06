@@ -374,6 +374,8 @@ function lickNoLick_Odor_v2
                     processPhotometryOnline(currentTrial);
                     updatePhotometryPlot('update', startX);  
                     xlabel('Time from cue (s)');
+                catch
+                    disp('*** Problem with online photometry processing ***');
                 end
             end
             %% collect and save data

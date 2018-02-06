@@ -130,14 +130,18 @@ function CuedOutcome_odor_complete
 
 
     %% Init Plots
+        %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
-        scrsz = get(groot,'ScreenSize'); 
-
-        BpodSystem.ProtocolFigures.NIDAQFig       = figure(...
-            'Position', [25 scrsz(4)*2/3-100 scrsz(3)/2-50  scrsz(4)/3],'Name','NIDAQ plot','numbertitle','off');
-        BpodSystem.ProtocolFigures.NIDAQPanel1     = subplot(2,1,1);
-        BpodSystem.ProtocolFigures.NIDAQPanel2     = subplot(2,1,2);
+        updatePhotometryPlot('init');
     end
+%     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+%         scrsz = get(groot,'ScreenSize'); 
+
+%         BpodSystem.ProtocolFigures.NIDAQFig       = figure(...
+%             'Position', [25 scrsz(4)*2/3-100 scrsz(3)/2-50  scrsz(4)/3],'Name','NIDAQ plot','numbertitle','off');
+%         BpodSystem.ProtocolFigures.NIDAQPanel1     = subplot(2,1,1);
+%         BpodSystem.ProtocolFigures.NIDAQPanel2     = subplot(2,1,2);
+%     end
 
     %% initialize trial types and outcomes
     MaxTrials = 1000;    
@@ -388,9 +392,11 @@ function CuedOutcome_odor_complete
                 processPhotometryAcq(currentTrial);
                 %% online plotting
                 try
-                    processPhotometryOnline(currentTrial);
-                    updatePhotometryPlot(startX);    
+                    processPhotometryOnline(currentTrial);  
+                    updatePhotometryPlot('update', startX);  
+                    xlabel('Time from reinforcement (s)');                    
                 catch
+                    disp('*** Problem with online photometry processing ***');
                 end
             end
             %% collect and save data
