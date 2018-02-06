@@ -1,4 +1,4 @@
-function PhotoStim
+function PhotoStim_MultiFreq
 % PhotoStim w/ multiple frequencies for optogenetic tagging
 % Written by Torben Ott 11/2017
 
@@ -14,10 +14,10 @@ if isempty(fieldnames(TaskParameters))
     TaskParameters.GUIMeta.StimFreq.Style = 'table';
     TaskParameters.GUIMeta.StimFreq.String = 'Stim Freq';
     TaskParameters.GUIMeta.OdorTable.ColumnLabel = {'Freq','Active'};
-    TaskParameters.GUI.PulsePalTriggerChannel = 2;
-    TaskParameters.GUI.PulsePalOutputChannels = 3;
+    TaskParameters.GUI.PulsePalTriggerChannel = 1;
+    TaskParameters.GUI.PulsePalOutputChannels = 34; % not really 34, stands for 3 and 4
     TaskParameters.GUI.BpodTriggerChannel = 2;
-    TaskParameters.GUI.ITI = 1;
+    TaskParameters.GUI.ITI = 2;
     
     TaskParameters.GUIPanels.GeneralParams = {'NTrials','ITI','BpodTriggerChannel','PulsePalTriggerChannel','PulsePalOutputChannels'};
      TaskParameters.GUIPanels.StimFreqTable ={'StimFreq'};
@@ -27,8 +27,13 @@ if isempty(fieldnames(TaskParameters))
     TaskParameters.GUIPanels.TrainParams = {'NPulses','PulseDuration_ms'};
     
 end
+%% Pause and wait for user to edit parameter GUI 
 BpodParameterGUI('init', TaskParameters);
-
+BpodSystem.Pause = 1;
+HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
+TaskParameters = BpodParameterGUI('sync', TaskParameters); % Sync parameters with BpodParameterGUI plugin
+BpodSystem.ProtocolSettings = TaskParameters; % copy settings back prior to saving
+SaveBpodProtocolSettings;
 
 %% Initialize plots
 BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [400 600 1000 200],'Name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
@@ -63,8 +68,8 @@ while iTrial <= TaskParameters.GUI.NTrials
     OutputChannels = OutputChannels(OutputChannels>0);
     %TriggerChannel
     if TaskParameters.GUI.PulsePalTriggerChannel == 1
-        ParameterMatrix(13,OutputChannels+1) = {0};
-        ParameterMatrix(14,OutputChannels+1) = {1};
+        ParameterMatrix(13,OutputChannels+1) = {1};
+        ParameterMatrix(14,OutputChannels+1) = {0};
     elseif TaskParameters.GUI.PulsePalTriggerChannel == 2
         ParameterMatrix(13,OutputChannels+1) = {0};
         ParameterMatrix(14,OutputChannels+1) = {1};
