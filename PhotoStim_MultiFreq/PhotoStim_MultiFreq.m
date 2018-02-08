@@ -11,9 +11,10 @@ if isempty(fieldnames(TaskParameters))
     
     TaskParameters.GUI.StimFreq.Freq = [5, 10, 20, 40, 80]';
     TaskParameters.GUI.StimFreq.Active = ones(size(TaskParameters.GUI.StimFreq.Freq,1),1);
+    TaskParameters.GUI.StimFreq.Amplitude = zeros(size(TaskParameters.GUI.StimFreq.Freq,1),1) + 2.5;
     TaskParameters.GUIMeta.StimFreq.Style = 'table';
     TaskParameters.GUIMeta.StimFreq.String = 'Stim Freq';
-    TaskParameters.GUIMeta.OdorTable.ColumnLabel = {'Freq','Active'};
+    TaskParameters.GUIMeta.OdorTable.ColumnLabel = {'Freq','Active','Amp'};
     TaskParameters.GUI.PulsePalTriggerChannel = 1;
     TaskParameters.GUI.PulsePalOutputChannels = 34; % not really 34, stands for 3 and 4
     TaskParameters.GUI.BpodTriggerChannel = 2;
