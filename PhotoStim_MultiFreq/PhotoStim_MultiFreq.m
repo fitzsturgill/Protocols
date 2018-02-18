@@ -14,13 +14,14 @@ if isempty(fieldnames(TaskParameters))
     TaskParameters.GUI.StimFreq.Amplitude = zeros(size(TaskParameters.GUI.StimFreq.Freq,1),1) + 2.5;
     TaskParameters.GUIMeta.StimFreq.Style = 'table';
     TaskParameters.GUIMeta.StimFreq.String = 'Stim Freq';
-    TaskParameters.GUIMeta.OdorTable.ColumnLabel = {'Freq','Active','Amp'};
+    TaskParameters.GUIMeta.OdorTable.ColumnLabel = {'Freq','Active','Amplitude'};
     TaskParameters.GUI.PulsePalTriggerChannel = 1;
     TaskParameters.GUI.PulsePalOutputChannels = 34; % not really 34, stands for 3 and 4
+    TaskParameters.GUI.PulsePalOutputTTL = 3; % this, when specified as a channel, overrides PulsePalOutputChannels with respect to voltage amplitude, makes voltage 5V (TTL logic)
     TaskParameters.GUI.BpodTriggerChannel = 2;
     TaskParameters.GUI.ITI = 2;
     
-    TaskParameters.GUIPanels.GeneralParams = {'NTrials','ITI','BpodTriggerChannel','PulsePalTriggerChannel','PulsePalOutputChannels'};
+    TaskParameters.GUIPanels.GeneralParams = {'NTrials','ITI','BpodTriggerChannel','PulsePalTriggerChannel','PulsePalOutputChannels','PulsePalOutputTTL'};
      TaskParameters.GUIPanels.StimFreqTable ={'StimFreq'};
     
     TaskParameters.GUI.NPulses = 10;
@@ -58,8 +59,10 @@ while iTrial <= TaskParameters.GUI.NTrials
         idx=length(ActiveFreqIdx);
     end
     StimFreq = TaskParameters.GUI.StimFreq.Freq(ActiveFreqIdx(idx));
+    StimAmp = TaskParameters.GUI.StimFreq.Amplitude(ActiveFreqIdx(idx));
     BpodSystem.Data.StimFreq(iTrial) = StimFreq;
     BpodSystem.Data.StimFreqIdx(iTrial) = ActiveFreqIdx(idx);
+    BpodSystem.Data.StimAmp(iTrial) = StimAmp;
     BpodSystem.Data.iTrial(iTrial) = iTrial;
     
     
@@ -67,6 +70,7 @@ while iTrial <= TaskParameters.GUI.NTrials
     ParameterMatrix = ParameterMatrixDefault;
     OutputChannels = [1:4] .* ismember('1234',num2str(TaskParameters.GUI.PulsePalOutputChannels));
     OutputChannels = OutputChannels(OutputChannels>0);
+    OutputChannels = union(OutputChannels, TaskParameters.GUI.PulsePalOutputTTL); % add the output TTL if not already specified in output channels    
     %TriggerChannel
     if TaskParameters.GUI.PulsePalTriggerChannel == 1
         ParameterMatrix(13,OutputChannels+1) = {1};
@@ -77,14 +81,33 @@ while iTrial <= TaskParameters.GUI.NTrials
     else
         error('Unknown trigger channel')
     end
-    %Inter-pulse interval
-    ParameterMatrix(8,OutputChannels+1)={1./StimFreq - TaskParameters.GUI.PulseDuration_ms/1000};
-    %Burst Duration
-    ParameterMatrix(9,OutputChannels+1)={1./StimFreq*TaskParameters.GUI.NPulses};
-    %stimulus train duration
-    ParameterMatrix(11,OutputChannels+1)={1./StimFreq*TaskParameters.GUI.NPulses};
+    %just one pulse? (e.g. using power meter)
+    if TaskParameters.GUI.NPulses == 1
+        onePulse = true;
+    else
+        onePulse = false;
+    end
+    if ~onePulse
+        %Inter-pulse interval
+        ParameterMatrix(8,OutputChannels+1)={1./StimFreq - TaskParameters.GUI.PulseDuration_ms/1000};
+        %Burst Duration
+        ParameterMatrix(9,OutputChannels+1)={1./StimFreq*TaskParameters.GUI.NPulses};
+        %stimulus train duration
+        ParameterMatrix(11,OutputChannels+1)={1./StimFreq*TaskParameters.GUI.NPulses};
+    else
+        %Inter-pulse interval
+        ParameterMatrix(8,OutputChannels+1)={0};
+        %Burst Duration
+        ParameterMatrix(9,OutputChannels+1)={TaskParameters.GUI.PulseDuration_ms/1000};
+        %stimulus train duration
+        ParameterMatrix(11,OutputChannels+1)={TaskParameters.GUI.PulseDuration_ms/1000};
+    end
     %single pulse duration
     ParameterMatrix(5,OutputChannels+1)={TaskParameters.GUI.PulseDuration_ms/1000};
+    %amplitude
+    ParameterMatrix(3,OutputChannels+1)={StimAmp};
+    %override amplitude for TTL
+    ParameterMatrix(3,TaskParameters.GUI.PulsePalOutputTTL) = {5}; % 5V for TTL logic
     
     ProgramPulsePal(ParameterMatrix);
     
