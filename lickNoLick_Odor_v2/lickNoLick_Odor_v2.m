@@ -186,7 +186,7 @@ function lickNoLick_Odor_v2
 
 
 
-    Outcomes = []; % NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
+    % Outcomes -> NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
     ReinforcementOutcome = []; % local version of BposSystem.Data.ReinforcementOutcome
     
     BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
@@ -206,11 +206,11 @@ function lickNoLick_Odor_v2
     lickAction = '';
     %% Outcome Plot
     trialsToShow = 50;
-    TrialTypes = NaN(1,MaxTrials);
-    TrialOutcomes = NaN(1,MaxTrials);
+%     TrialTypes = [];
+%     TrialOutcomes = [];
     BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none');
     BpodSystem.GUIHandles.OutcomePlot = axes;
-    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', TrialTypes, 'ntrials', trialsToShow);
+    TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -222,7 +222,11 @@ function lickNoLick_Odor_v2
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         SaveBpodProtocolSettings;
         S.Block = S.Tables{S.GUI.Block};
-        TrialType = pickRandomTrials_blocks(S.Block.Table);
+        TrialType = pickRandomTrials_blocks(S.Block.Table); % trial type chosen on the fly based upon current Protocol Settings
+        TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',... % update outcome plot to show trial type of current trial with outcome undefined (NaN)
+            currentTrial, [BpodSystem.Data.TrialTypes TrialType], [BpodSystem.Data.TrialOutcome NaN]);            
+        
+        
         switch S.Block.Table.CS(TrialType)
             case 0
                 OdorValve = 0; % uncued
@@ -416,10 +420,8 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.LickAction{end + 1} = lickAction;
 
             %% update outcome plot to reflect upcoming trial
-            TrialTypes(currentTrial) = TrialType;
-            TrialOutcomes(currentTrial) = TrialOutcome;
             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
-                currentTrial + 1, TrialTypes, TrialOutcomes);            
+                currentTrial, BpodSystem.Data.TrialTypes, BpodSystem.Data.TrialOutcome);            
             if strcmpi(ReinforcementOutcome, 'reward')
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
