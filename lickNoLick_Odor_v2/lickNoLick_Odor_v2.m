@@ -275,6 +275,7 @@ function lickNoLick_Odor_v2
             end
         end
         disp(['*** Trial Type = ' num2str(TrialType) ' Block = ' num2str(S.GUI.Block) ' ***']);
+        S.Block.Table % display current block (should have this be in a GUI window eventually)
         %% Expotentially distributed ITIs
         if S.GUI.mu_iti
             S.GUI.ITI = inf;
