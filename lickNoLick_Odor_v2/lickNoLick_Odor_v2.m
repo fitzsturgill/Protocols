@@ -206,7 +206,7 @@ function lickNoLick_Odor_v2
     
     BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.TrialOutcome = []; % onlineFilterTrials dependent on this variable
-    BpodSystem.Data.CSValence = []; % 1 = CS+, 0 = CS-
+    BpodSystem.Data.CSValence = []; % 1 = CS+, -1 = CS-, 0 = unCued or a 'control' odorant that doesn't affect outcomes or adaptive reversals
     BpodSystem.Data.ReinforcementOutcome = []; % i.e. Reward, Punish, WNoise, or Neutral
     BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
     BpodSystem.Data.OdorValve = []; % e.g. 1st odor = V5, or V6
@@ -215,6 +215,7 @@ function lickNoLick_Odor_v2
     BpodSystem.Data.BlockNumber = [];
     BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
     BpodSystem.Data.SwitchParameterCriterion = [];
+    BpodSystem.Data.AnswerLicks = struct('count', [], 'rate', [], 'duration', []); % number of licks during answer period, nTrials x 1
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -335,11 +336,11 @@ function lickNoLick_Odor_v2
             'OutputActions', {'GlobalTimerTrig', 1});
         sma = AddState(sma, 'Name', 'AnswerNoLick', ... 
             'Timer', 0,...
-            'StateChangeConditions', {'Port1In', 'AnswerLick', 'GlobalTimer1_End', noLickOutcome},...
+            'StateChangeConditions', {'Port1In', 'AnswerLick', 'GlobalTimer1_End', 'NoLickOutcome'},...
             'OutputActions', {});     
         sma = AddState(sma, 'Name', 'AnswerLick', ... 
             'Timer', S.GUI.OutcomeDelay,...
-            'StateChangeConditions', {'Tup', lickOutcome, 'GlobalTimer1_End', lickOutcome},... % whichever comes first
+            'StateChangeConditions', {'Tup', 'LickOutcome', 'GlobalTimer1_End', 'LickOutcome'},... % whichever comes first
             'OutputActions', {});             
         sma = AddState(sma, 'Name', 'NoLickOutcome',... % dummy state for alignment
             'Timer', 0,...
@@ -424,6 +425,15 @@ function lickNoLick_Odor_v2
                     TrialOutcome = NaN; % uncued
                 end                
             end
+            
+            % computer number of answer licks
+            answerWindow = [...
+                BpodSystem.Data.RawEvents.Trial{currentTrial}.States.AnswerStart(1)... % start of answer
+                max(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LickOutcome(end), BpodSystem.Data.RawEvents.Trial{currentTrial}.States.NoLickOutcome(end))... % end of answer
+                ];            
+            BpodSystem.Data.AnswerLicks.count(end + 1) = sum(answerWindow(1) <= BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In < answerWindow(2));
+            BpodSystem.Data.AnswerLicks.duration(end + 1) = diff(answerWindow);
+            BpodSystem.Data.AnswerLicks.rate(end + 1) = BpodSystem.Data.AnswerLicks.count / BpodSystem.Data.AnswerLicks.duration;
 
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
             BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
