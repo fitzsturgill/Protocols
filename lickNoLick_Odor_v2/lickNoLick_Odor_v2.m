@@ -438,7 +438,7 @@ function lickNoLick_Odor_v2
                 ];            
             
             if isfield(BpodSystem.Data.RawEvents.Trial{currentTrial}.Events, 'Port1In')
-                BpodSystem.Data.AnswerLicks.count(end + 1) = sum(answerWindow(1) <= BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In < answerWindow(2));
+                BpodSystem.Data.AnswerLicks.count(end + 1) = sum((answerWindow(1) <= BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In) & (BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In < answerWindow(2)));
             else
                 BpodSystem.Data.AnswerLicks.count(end + 1) = 0;
             end
