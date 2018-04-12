@@ -2,6 +2,7 @@ function lickNoLick_Odor_v2
 
     global BpodSystem
     
+    %% CS valence is important-   explain here!!!
     
     TotalRewardDisplay('init')
     %% Define parameters
@@ -216,7 +217,7 @@ function lickNoLick_Odor_v2
     BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
     BpodSystem.Data.SwitchParameterCriterion = [];
     BpodSystem.Data.AnswerLicks = struct('count', [], 'rate', [], 'duration', []); % number of licks during answer period, nTrials x 1
-    
+    BpodSystem.Data.AnswerLicksROC = struct('auROC', [], 'pVal', [], 'CI', []); 
     lickOutcome = '';
     noLickOutcome = '';
     lickAction = '';
@@ -227,6 +228,10 @@ function lickNoLick_Odor_v2
     BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none');
     BpodSystem.GUIHandles.OutcomePlot = axes;
     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
+    
+    %% testing auROC plotting
+    BpodSystem.ProtocolFigure.auROC_fig = ensureFigure('test_auROC');
+    BpodSystem.ProtocolFigure.auROC_ax = axes; 
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -461,8 +466,12 @@ function lickNoLick_Odor_v2
                 switchParameter = NaN;
                 switchParameterCriterion = NaN;
             end
-            BpodSystem.Data.SwitchParameter(end + 1) = switchParameter;
+            BpodSystem.Data.SwitchParameter(end + 1) = switchParameter(1);
             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
+            
+            % testing auROC plotting
+            scatter(1:currentTrial, BpodSystem.Data.AnswerLicksROC.auROC, 20, BpodSystem.Data.AnswerLicksROC.pVal,...
+                'Parent', BpodSystem.ProtocolFigure.auROC_ax);
             
             %% block transition lines
             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));

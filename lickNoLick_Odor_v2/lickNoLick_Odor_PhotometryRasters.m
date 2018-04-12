@@ -25,7 +25,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
             BpodSystem.ProtocolFigures.phRaster.odorsToPlot = ls.odorsToPlot;
             BpodSystem.ProtocolFigures.phRaster.switchParameterCriterion = ls.switchParameterCriterion;
             
-            if sum(channelsOn == 1)
+            if any(channelsOn == 1)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
                 nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
@@ -45,7 +45,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 BpodSystem.ProtocolFigures.phRaster.nextReverseLine_ch1 = [];
                 BpodSystem.ProtocolFigures.phRaster.ax_ch1 = [];
             end
-            if sum(channelsOn == 2)
+            if any(channelsOn == 2)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
                 nAxes = numel(ls.odorsToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
@@ -83,7 +83,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                 rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
                 neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
                 punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
-                if sum(channelsOn == 1)
+                if any(channelsOn == 1)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
                     nSamples = size(channelData, 2);
                     if i == 1
@@ -120,7 +120,7 @@ function lickNoLick_Odor_PhotometryRasters(Op, varargin)
                     axis(ax, 'tight');
                 end
                 
-                if sum(channelsOn == 2)
+                if any(channelsOn == 2)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{2};
                     nSamples = size(channelData, 2);
                     if i == 1
