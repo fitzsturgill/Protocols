@@ -1,7 +1,5 @@
 function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLicksROC(outcomes, blockNumbers, S, varargin)
 
-% LOGICAL? IS USE OF VARARGIN CORRECT HERE, WILL I EVER USE IT CONSIDERING
-% HOW i REFERENCE THE BLOCK SWITCH FUNCTIONS WITHIN THE BLOCKS???
 
 % This function is modeled after previous blockSwFcns that derive
 % switchParameter from trial outcomes (discrete, of set [-1 0 1 2])
@@ -32,9 +30,11 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
 
 %% optional parameters, first set defaults
     defaults = {...
-        'ROCwindow', 20;... 
+        'ROCwindow', 20;...
+        'windowMode', 'local';... % [LOCAL | GLOBAL] Local: separate CS+ and CS- windows, number of elements = ROC window. Global: Windows include subset of last n = ROCwindow trials that are either CS+ or CS- trials
         'reset', 1;... 
         'nBoot', 100;...
+        'minROCPoints', 5;... % mininum sample size for auROC calculation
         'pCritical', 0.05;...
         'nTrialsAbove', 20;...  % for how many trials does the p value need to pass the criterion (at least by the fractionAboveNeeded)
         'fractionAboveNeeded', 0.9;...
@@ -53,27 +53,44 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
 
 % %% end kludge
     [bss, ~] = parse_args(defaults, varargin{:}); % block switch settings
-    auROC = NaN;
-    
     
     lastReverse = find(diff(blockNumbers), 1, 'last');
     if isempty(lastReverse)
-        lastReverse = 1; % you can't have reversed on first trial but 1 as an index is useful
+        lastReverse = 1; % session start
     else
         lastReverse = lastReverse + 1; % diff gives you trial BEFORE something happens so we add + 1
     end
-    
     currentTrial = length(outcomes);
-    trw = [max(max(1, currentTrial - bss.ROCwindow + 1), lastReverse), currentTrial]; % trw = thisROCwindow
-    tfw = [max(max(1, currentTrial - bss.nTrialsAbove + 1), lastReverse), currentTrial]; % tfw = this nTrialsAbove window
+    nTrialsCurrent = currentTrial - lastReverse + 1; 
+    tfw = [max(max(1, currentTrial - bss.nTrialsAbove + 1), lastReverse), currentTrial]; % tfw = this nTrialsAbove window    
 
-    theseData = BpodSystem.Data.AnswerLicks.rate(trw(1):trw(2));
-    thesePlusTrials = BpodSystem.Data.CSValence(trw(1):trw(2)) == 1;
-    theseMinusTrials = BpodSystem.Data.CSValence(trw(1):trw(2)) == -1;
-    nTrialsCurrent = currentTrial - lastReverse + 1; % don't count uncued (for which outcome = NaN)    
-    
-    if any(thesePlusTrials) && any(theseMinusTrials) % needs to be at least 1 trial of each trial type (CS+ and CS-)
-        [D, P, CI] = rocarea_CI(theseData(thesePlusTrials), theseData(theseMinusTrials), 'boot', bss.nBoot, 'scale');
+    switch bss.windowMode
+        case 'local'
+            thesePlusTrials = find(BpodSystem.Data.CSValence == 1 & ((1:currentTrial) > lastReverse));
+            if ~isempty(thesePlusTrials)
+                thesePlusTrials = thesePlusTrials(end - min(bss.ROCwindow, length(thesePlusTrials)) + 1:end);
+                dataPlus = BpodSystem.Data.AnswerLicks.rate(thesePlusTrials);
+            else
+                dataPlus = [];
+            end
+            theseMinusTrials = find(BpodSystem.Data.CSValence == -1 & ((1:currentTrial) > lastReverse));
+            if ~isempty(theseMinusTrials)
+                theseMinusTrials = theseMinusTrials(end - min(bss.ROCwindow, length(theseMinusTrials)) + 1:end);
+                dataMinus = BpodSystem.Data.AnswerLicks.rate(theseMinusTrials);
+            else
+                dataMinus = [];
+            end            
+        case 'global'
+            trw = [max(max(1, currentTrial - bss.ROCwindow + 1), lastReverse), currentTrial]; % trw = thisROCwindow
+            theseData = BpodSystem.Data.AnswerLicks.rate(trw(1):trw(2));
+            thesePlusTrials = BpodSystem.Data.CSValence(trw(1):trw(2)) == 1;
+            theseMinusTrials = BpodSystem.Data.CSValence(trw(1):trw(2)) == -1;
+            dataPlus = theseData(thesePlusTrials);
+            dataMinus = theseData(theseMinusTrials);
+    end
+
+    if (length(dataPlus) >= bss.minROCpoints) && (length(dataMinus) >= bss.minROCpoints) % needs to be at least n data point to spit out auROC value
+        [D, P, CI] = rocarea_CI(dataPlus, dataMinus, 'boot', bss.nBoot, 'scale');
         BpodSystem.Data.AnswerLicksROC.auROC(currentTrial, 1) = D;
         BpodSystem.Data.AnswerLicksROC.pVal(currentTrial ,1) = P;
         BpodSystem.Data.AnswerLicksROC.CI(currentTrial, :) = CI;
