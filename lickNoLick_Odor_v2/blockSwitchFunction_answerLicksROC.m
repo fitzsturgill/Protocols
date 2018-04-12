@@ -30,7 +30,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
 
 %% optional parameters, first set defaults
     defaults = {...
-        'ROCwindow', 20;...
+        'ROCwindow', 10;...
         'windowMode', 'local';... % [LOCAL | GLOBAL] Local: separate CS+ and CS- windows, number of elements = ROC window. Global: Windows include subset of last n = ROCwindow trials that are either CS+ or CS- trials
         'reset', 1;... 
         'nBoot', 100;...
@@ -42,9 +42,11 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
         };
 % %% testing kludge
 %     defaults = {...
-%         'ROCwindow', 20;... 
+%         'ROCwindow', 10;...
+%         'windowMode', 'local';...
 %         'reset', 1;... 
 %         'nBoot', 100;...
+%         'minROCPoints', 5;...
 %         'pCritical', 0.05;...
 %         'nTrialsAbove', 3;...  % for how many trials does the p value need to pass the criterion (at least by the fractionAboveNeeded)
 %         'fractionAboveNeeded', 0.6;...
@@ -70,6 +72,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             if ~isempty(thesePlusTrials)
                 thesePlusTrials = thesePlusTrials(end - min(bss.ROCwindow, length(thesePlusTrials)) + 1:end);
                 dataPlus = BpodSystem.Data.AnswerLicks.rate(thesePlusTrials);
+%                 dataPlus = randn(size(dataPlus)) + 1.5;
             else
                 dataPlus = [];
             end
@@ -77,6 +80,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             if ~isempty(theseMinusTrials)
                 theseMinusTrials = theseMinusTrials(end - min(bss.ROCwindow, length(theseMinusTrials)) + 1:end);
                 dataMinus = BpodSystem.Data.AnswerLicks.rate(theseMinusTrials);
+%                 dataMinus = randn(size(dataMinus));
             else
                 dataMinus = [];
             end            
@@ -88,8 +92,11 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             dataPlus = theseData(thesePlusTrials);
             dataMinus = theseData(theseMinusTrials);
     end
+%     if ~rem(currentTrial, 10)
+%         disp('lets see whats going on here');
+%     end
 
-    if (length(dataPlus) >= bss.minROCpoints) && (length(dataMinus) >= bss.minROCpoints) % needs to be at least n data point to spit out auROC value
+    if (length(dataPlus) >= bss.minROCPoints) && (length(dataMinus) >= bss.minROCPoints) % needs to be at least n data point to spit out auROC value
         [D, P, CI] = rocarea_CI(dataPlus, dataMinus, 'boot', bss.nBoot, 'scale');
         BpodSystem.Data.AnswerLicksROC.auROC(currentTrial, 1) = D;
         BpodSystem.Data.AnswerLicksROC.pVal(currentTrial ,1) = P;

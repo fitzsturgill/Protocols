@@ -167,7 +167,7 @@ ST.CSValence = [1; 1; -1; -1; 0; 0]; % whether CS is considered CS+ and licks ar
 ST.US = {'Reward'; 'Neutral'; 'Reward'; 'Neutral'; 'Reward'; 'Reward'};   % Reward
 ST.Instrumental = [0; 0; 0; 0; 0; 0];
 S.Table = struct2table(ST);
-S.LinkTo = 9;
+S.LinkTo = 8;
 S.LinkToFcn = 'blockSwitchFunction_answerLicksROC';
 
 blocks{end + 1} = S;
@@ -187,7 +187,7 @@ ST.CSValence = [1; 1; -1; -1; 0; 0]; % whether CS is considered CS+ and licks ar
 ST.US = {'Reward'; 'Neutral'; 'Reward'; 'Neutral'; 'Reward'; 'Reward'};   % Reward
 ST.Instrumental = [0; 0; 0; 0; 0; 0];
 S.Table = struct2table(ST);
-S.LinkTo = 8;
+S.LinkTo = 9;
 S.LinkToFcn = 'blockSwitchFunction_answerLicksROC';
 
 blocks{end + 1} = S;

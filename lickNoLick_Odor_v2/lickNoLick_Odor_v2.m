@@ -230,8 +230,8 @@ function lickNoLick_Odor_v2
     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
     
     %% testing auROC plotting
-    BpodSystem.ProtocolFigures.auROC_fig = ensureFigure('test_auROC');
-    BpodSystem.ProtocolFigures.auROC_ax = axes; 
+    BpodSystem.ProtocolFigures.auROC.fig = ensureFigure('test_auROC');
+    BpodSystem.ProtocolFigures.auROC.ax = axes; 
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -477,7 +477,7 @@ function lickNoLick_Odor_v2
             
             % testing auROC plotting
             scatter(1:currentTrial, BpodSystem.Data.AnswerLicksROC.auROC, 20, BpodSystem.Data.AnswerLicksROC.pVal,...
-                'Parent', BpodSystem.ProtocolFigures.auROC_ax);
+                'Parent', BpodSystem.ProtocolFigures.auROC.ax);
             
             %% block transition lines
             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));
