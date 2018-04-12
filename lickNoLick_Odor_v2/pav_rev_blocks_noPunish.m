@@ -143,6 +143,91 @@ ST.US = {'Reward'; 'Neutral'; 'Reward'; 'Neutral'; 'Reward'; 'Reward'};   % Rewa
 ST.Instrumental = [0; 0; 0; 0; 0; 0];
 S.Table = struct2table(ST);
 S.LinkTo = 0;
+S.LinkToFcn = '';
 
 blocks{end + 1} = S;
+
+
+
+%%%%%%%%%%%%%%%%%%%% Blocks 8 & 8: CS+ pReward = 0.8,   CS- pReward = 0.05,
+%%%%%%%%%%%%%%%%%%%% automated reversals!!!!!!
+
+%% block 8 (initial contingency, manual control, with occasional uncued outcomes)
+S = struct(); ST = struct();
+ST.BlockNumber = repmat(8, 6, 1); % fluff
+ST.P = [...
+    0.80 * 0.5 * 0.85;...
+    0.20 * 0.5 * 0.85;...
+    0.05 * 0.5 * 0.85;...
+    0.95 * 0.5 * 0.85;...
+    0.10;...
+    0.05];
+ST.CS = [1; 1; 2; 2; 3; 0]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = [1; 1; -1; -1; 0; 0]; % whether CS is considered CS+ and licks are counted as "hits"
+ST.US = {'Reward'; 'Neutral'; 'Reward'; 'Neutral'; 'Reward'; 'Reward'};   % Reward
+ST.Instrumental = [0; 0; 0; 0; 0; 0];
+S.Table = struct2table(ST);
+S.LinkTo = 9;
+S.LinkToFcn = 'blockSwitchFunction_answerLicksROC';
+
+blocks{end + 1} = S;
+
+%% block 9 (reversed, manual control, with occasional uncued outcomes)
+S = struct(); ST = struct();
+ST.BlockNumber = repmat(9, 6, 1); % fluff
+ST.P = [...
+    0.80 * 0.5 * 0.85;...
+    0.20 * 0.5 * 0.85;...
+    0.05 * 0.5 * 0.85;...
+    0.95 * 0.5 * 0.85;...
+    0.10;...
+    0.05];
+ST.CS = [2; 2; 1; 1; 3; 0]; % will be used to select S.GUI.Odor1Valve
+ST.CSValence = [1; 1; -1; -1; 0; 0]; % whether CS is considered CS+ and licks are counted as "hits"
+ST.US = {'Reward'; 'Neutral'; 'Reward'; 'Neutral'; 'Reward'; 'Reward'};   % Reward
+ST.Instrumental = [0; 0; 0; 0; 0; 0];
+S.Table = struct2table(ST);
+S.LinkTo = 8;
+S.LinkToFcn = 'blockSwitchFunction_answerLicksROC';
+
+blocks{end + 1} = S;
+
+
+
+
+
+
+
+
+
+%%% testing kludge
+% 
+% %% block 8 (initial contingency, manual control, with occasional uncued outcomes)
+% S = struct(); ST = struct();
+% ST.BlockNumber = repmat(8, 2, 1); % fluff
+% ST.P = [.5; .5];
+% ST.CS = [1; 2]; % will be used to select S.GUI.Odor1Valve
+% ST.CSValence = [1; -1]; % whether CS is considered CS+ and licks are counted as "hits"
+% ST.US = {'Neutral'; 'Punish'};   % Reward
+% ST.Instrumental = [0; 0];
+% S.Table = struct2table(ST);
+% S.LinkTo = 9;
+% S.LinkToFcn = 'blockSwitchFunction_answerLicksROC';
+% 
+% blocks{end + 1} = S;
+% 
+% %% block 9 (initial contingency, manual control, with occasional uncued outcomes)
+% S = struct(); ST = struct();
+% ST.BlockNumber = repmat(9, 2, 1); % fluff
+% ST.P = [.5; .5];
+% ST.CS = [2; 1]; % will be used to select S.GUI.Odor1Valve
+% ST.CSValence = [1; -1]; % whether CS is considered CS+ and licks are counted as "hits"
+% ST.US = {'Neutral'; 'Punish'};   % Reward
+% ST.Instrumental = [0; 0];
+% S.Table = struct2table(ST);
+% S.LinkTo = 9;
+% S.LinkToFcn = 'blockSwitchFunction_answerLicksROC';
+% 
+% blocks{end + 1} = S;
+
 

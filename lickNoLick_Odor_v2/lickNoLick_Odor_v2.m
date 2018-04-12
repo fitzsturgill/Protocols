@@ -230,8 +230,8 @@ function lickNoLick_Odor_v2
     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
     
     %% testing auROC plotting
-    BpodSystem.ProtocolFigure.auROC_fig = ensureFigure('test_auROC');
-    BpodSystem.ProtocolFigure.auROC_ax = axes; 
+    BpodSystem.ProtocolFigures.auROC_fig = ensureFigure('test_auROC');
+    BpodSystem.ProtocolFigures.auROC_ax = axes; 
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -436,7 +436,13 @@ function lickNoLick_Odor_v2
                 BpodSystem.Data.RawEvents.Trial{currentTrial}.States.AnswerStart(1)... % start of answer
                 max(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LickOutcome(end), BpodSystem.Data.RawEvents.Trial{currentTrial}.States.NoLickOutcome(end))... % end of answer
                 ];            
-            BpodSystem.Data.AnswerLicks.count(end + 1) = sum(answerWindow(1) <= BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In < answerWindow(2));
+            
+            if isfield(BpodSystem.Data.RawEvents.Trial{currentTrial}.Events, 'Port1In')
+                BpodSystem.Data.AnswerLicks.count(end + 1) = sum(answerWindow(1) <= BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In < answerWindow(2));
+            else
+                BpodSystem.Data.AnswerLicks.count(end + 1) = 0;
+            end
+                
             BpodSystem.Data.AnswerLicks.duration(end + 1) = diff(answerWindow);
             BpodSystem.Data.AnswerLicks.rate(end + 1) = BpodSystem.Data.AnswerLicks.count / BpodSystem.Data.AnswerLicks.duration;
 
@@ -471,7 +477,7 @@ function lickNoLick_Odor_v2
             
             % testing auROC plotting
             scatter(1:currentTrial, BpodSystem.Data.AnswerLicksROC.auROC, 20, BpodSystem.Data.AnswerLicksROC.pVal,...
-                'Parent', BpodSystem.ProtocolFigure.auROC_ax);
+                'Parent', BpodSystem.ProtocolFigures.auROC_ax);
             
             %% block transition lines
             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));
