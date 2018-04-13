@@ -230,7 +230,7 @@ function lickNoLick_Odor_v2
     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
     
     %% testing auROC plotting
-    BpodSystem.ProtocolFigures.auROC.fig = ensureFigure('test_auROC');
+    BpodSystem.ProtocolFigures.auROC.fig = ensureFigure('test_auROC', 1);
     BpodSystem.ProtocolFigures.auROC.ax = axes; 
     
     lickOutcome = '';
