@@ -442,9 +442,9 @@ function lickNoLick_Odor_v2
             else
                 BpodSystem.Data.AnswerLicks.count(end + 1) = 0;
             end
-                
+
             BpodSystem.Data.AnswerLicks.duration(end + 1) = diff(answerWindow);
-            BpodSystem.Data.AnswerLicks.rate(end + 1) = BpodSystem.Data.AnswerLicks.count / BpodSystem.Data.AnswerLicks.duration;
+            BpodSystem.Data.AnswerLicks.rate(end + 1) = BpodSystem.Data.AnswerLicks.count(end) / BpodSystem.Data.AnswerLicks.duration(end);
 
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
             BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
