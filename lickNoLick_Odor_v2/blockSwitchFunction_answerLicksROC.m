@@ -32,28 +32,15 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
     defaults = {...
         'ROCwindow', 10;...
         'windowMode', 'local';... % [LOCAL | GLOBAL] Local: separate CS+ and CS- windows, number of elements = ROC window. Global: Windows include subset of last n = ROCwindow trials that are either CS+ or CS- trials
-        'reset', 1;... 
+        'reset', 1;...  % always 1 for now, means that auROC values are reset following each block change
         'nBoot', 100;...
         'minROCPoints', 5;... % mininum sample size for auROC calculation
         'pCritical', 0.05;...
-        'nTrialsAbove', 20;...  % for how many trials does the p value need to pass the criterion (at least by the fractionAboveNeeded)
+        'nTrialsAbove', 20;...  % denominator for determing what fraction of trials exceed the criterion p value
         'fractionAboveNeeded', 0.9;...
         'minTrials', 50;...
         };
-% %% testing kludge
-%     defaults = {...
-%         'ROCwindow', 10;...
-%         'windowMode', 'local';...
-%         'reset', 1;... 
-%         'nBoot', 100;...
-%         'minROCPoints', 5;...
-%         'pCritical', 0.05;...
-%         'nTrialsAbove', 3;...  % for how many trials does the p value need to pass the criterion (at least by the fractionAboveNeeded)
-%         'fractionAboveNeeded', 0.6;...
-%         'minTrials', 20;...
-%         };
 
-% %% end kludge
     [bss, ~] = parse_args(defaults, varargin{:}); % block switch settings
     
     lastReverse = find(diff(blockNumbers), 1, 'last');
@@ -66,13 +53,14 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
     nTrialsCurrent = currentTrial - lastReverse + 1; 
     tfw = [max(max(1, currentTrial - bss.nTrialsAbove + 1), lastReverse), currentTrial]; % tfw = this nTrialsAbove window    
 
+    
+    %% for local and global modes, dataPlus and dataMinus are of length <= bss.nTrialsAbove
     switch bss.windowMode
         case 'local'
             thesePlusTrials = find(BpodSystem.Data.CSValence == 1 & ((1:currentTrial) > lastReverse));
             if ~isempty(thesePlusTrials)
                 thesePlusTrials = thesePlusTrials(end - min(bss.ROCwindow, length(thesePlusTrials)) + 1:end);
                 dataPlus = BpodSystem.Data.AnswerLicks.rate(thesePlusTrials);
-%                 dataPlus = randn(size(dataPlus)) + 1.5;
             else
                 dataPlus = [];
             end
@@ -80,7 +68,6 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             if ~isempty(theseMinusTrials)
                 theseMinusTrials = theseMinusTrials(end - min(bss.ROCwindow, length(theseMinusTrials)) + 1:end);
                 dataMinus = BpodSystem.Data.AnswerLicks.rate(theseMinusTrials);
-%                 dataMinus = randn(size(dataMinus));
             else
                 dataMinus = [];
             end            
@@ -92,21 +79,18 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             dataPlus = theseData(thesePlusTrials);
             dataMinus = theseData(theseMinusTrials);
     end
-%     if ~rem(currentTrial, 10)
-%         disp('lets see whats going on here');
-%     end
 
-    if (length(dataPlus) >= bss.minROCPoints) && (length(dataMinus) >= bss.minROCPoints) % needs to be at least n data point to spit out auROC value
+    if (length(dataPlus) >= bss.minROCPoints) && (length(dataMinus) >= bss.minROCPoints) % needs to be at least n data points to spit out auROC value
         [D, P, CI] = rocarea_CI(dataPlus, dataMinus, 'boot', bss.nBoot, 'scale');
         BpodSystem.Data.AnswerLicksROC.auROC(currentTrial, 1) = D;
         BpodSystem.Data.AnswerLicksROC.pVal(currentTrial ,1) = P;
         BpodSystem.Data.AnswerLicksROC.CI(currentTrial, :) = CI;
         % compute fraction significant trials(the switch parameter)
-        if nTrialsCurrent >= bss.nTrialsAbove
+        if nTrialsCurrent >= bss.minTrials
             % keeper trials have positive auROC and are significant
             validTrials = (BpodSystem.Data.AnswerLicksROC.pVal(tfw(1):tfw(2)) <= bss.pCritical) &...
                 (BpodSystem.Data.AnswerLicksROC.auROC(tfw(1):tfw(2)) > 0);
-            fractionAbove = sum(validTrials) / bss.nTrialsAbove;
+            fractionAbove = sum(validTrials) / bss.nTrialsAbove; % if you don't have enough trials to have nTrialsAbove auROC data points, still divide by nTrialsAbove to penalize not having enough data points
         else
             fractionAbove = NaN;
         end
