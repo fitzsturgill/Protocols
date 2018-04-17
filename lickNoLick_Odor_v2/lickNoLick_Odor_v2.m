@@ -230,8 +230,14 @@ function lickNoLick_Odor_v2
     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
     
     %% testing auROC plotting
-    BpodSystem.ProtocolFigures.auROC.fig = ensureFigure('test_auROC', 1);
-    BpodSystem.ProtocolFigures.auROC.ax = axes; 
+    BpodSystem.ProtocolFigures.auROC.fig = ensureFigure('auROC_plot', 1); % still a kludge, assumes that I'm using correct block switch funtion currently... (4/2018)
+    BpodSystem.ProtocolFigures.auROC.ax = subplot(2,1,1, 'NextPlot', 'add');
+    BpodSystem.ProtocolFigures.auROC.sh = scatter([], [], 20, [], 'Parent', BpodSystem.ProtocolFigures.auROC.ax); 
+    ylabel('auROC');
+    BpodSystem.ProtocolFigures.auROC.ax2 = subplot(2,1,2, 'NextPlot', 'add'); % plot switchParameter
+    BpodSystem.ProtocolFigures.auROC.clh = line([],[], 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'g');
+    BpodSystem.ProtocolFigures.auROC.splh = line([],[], 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'k');
+    ylabel('Fraction significant'); xlabel('trial number');
     
     lickOutcome = '';
     noLickOutcome = '';
@@ -476,8 +482,10 @@ function lickNoLick_Odor_v2
             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
             
             % testing auROC plotting
-            scatter(1:currentTrial, BpodSystem.Data.AnswerLicksROC.auROC, 20, BpodSystem.Data.AnswerLicksROC.pVal,...
-                'Parent', BpodSystem.ProtocolFigures.auROC.ax);
+            set(BpodSystem.ProtocolFigures.auROC.sh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.AnswerLicksROC.auROC, 'CData', BpodSystem.Data.AnswerLicksROC.pVal);
+            set(BpodSystem.ProtocolFigures.auROC.splh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.SwitchParameter);
+            set(BpodSystem.ProtocolFigures.auROC.clh, 'XData', [1 currentTrial], 'YData', [switchParameterCriterion switchParameterCriterion]);
+            
             
             %% block transition lines
             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));
