@@ -39,6 +39,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
         'nTrialsAbove', 20;...  % denominator for determing what fraction of trials exceed the criterion p value
         'fractionAboveNeeded', 0.9;...
         'minTrials', 50;...
+        'minHitRate', 0.7;...
         };
 
     [bss, ~] = parse_args(defaults, varargin{:}); % block switch settings
@@ -70,7 +71,8 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
                 dataMinus = BpodSystem.Data.AnswerLicks.rate(theseMinusTrials);
             else
                 dataMinus = [];
-            end            
+            end
+            beginHitRate = min(min(thesePlusTrials), min(theseMinusTrials)); % first trial to compute hit rate
         case 'global'
             trw = [max(max(1, currentTrial - bss.ROCwindow + 1), lastReverse), currentTrial]; % trw = thisROCwindow
             theseData = BpodSystem.Data.AnswerLicks.rate(trw(1):trw(2));
@@ -78,6 +80,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             theseMinusTrials = BpodSystem.Data.CSValence(trw(1):trw(2)) == -1;
             dataPlus = theseData(thesePlusTrials);
             dataMinus = theseData(theseMinusTrials);
+            beginHitRate = trw(1); % first trial to compute hit rate
     end
 
     if (length(dataPlus) >= bss.minROCPoints) && (length(dataMinus) >= bss.minROCPoints) % needs to be at least n data points to spit out auROC value
@@ -85,8 +88,13 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
         BpodSystem.Data.AnswerLicksROC.auROC(currentTrial, 1) = D;
         BpodSystem.Data.AnswerLicksROC.pVal(currentTrial ,1) = P;
         BpodSystem.Data.AnswerLicksROC.CI(currentTrial, :) = CI;
+        
+        % compute hit rate
+        HitRate = length(find(outcomes(beginHitRate:end) == 1)) / length(find(ismember(outcomes(beginHitRate:end), [1 -1]))); % 
+        disp(['Hit rate is ' num2str(HitRate)]);
+        
         % compute fraction significant trials(the switch parameter)
-        if nTrialsCurrent >= bss.minTrials
+        if (nTrialsCurrent >= bss.minTrials) && (HitRate >= bss.minHitRate)
             % keeper trials have positive auROC and are significant
             validTrials = (BpodSystem.Data.AnswerLicksROC.pVal(tfw(1):tfw(2)) <= bss.pCritical) &...
                 (BpodSystem.Data.AnswerLicksROC.auROC(tfw(1):tfw(2)) > 0);
