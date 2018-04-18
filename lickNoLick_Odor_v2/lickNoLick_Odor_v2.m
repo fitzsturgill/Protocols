@@ -235,8 +235,8 @@ function lickNoLick_Odor_v2
     BpodSystem.ProtocolFigures.auROC.sh = scatter([], [], 20, [], 'Parent', BpodSystem.ProtocolFigures.auROC.ax); 
     ylabel('auROC');
     BpodSystem.ProtocolFigures.auROC.ax2 = subplot(2,1,2, 'NextPlot', 'add'); % plot switchParameter
-    BpodSystem.ProtocolFigures.auROC.clh = line([],[], 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'g');
-    BpodSystem.ProtocolFigures.auROC.splh = line([],[], 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'k');
+    BpodSystem.ProtocolFigures.auROC.clh = line(0,0, 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'g');
+    BpodSystem.ProtocolFigures.auROC.splh = line(0,0, 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'k');
     ylabel('Fraction significant'); xlabel('trial number');
     
     lickOutcome = '';
@@ -480,12 +480,14 @@ function lickNoLick_Odor_v2
             end
             BpodSystem.Data.SwitchParameter(end + 1) = switchParameter(1);
             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
+
             
+
             % testing auROC plotting
             set(BpodSystem.ProtocolFigures.auROC.sh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.AnswerLicksROC.auROC, 'CData', BpodSystem.Data.AnswerLicksROC.pVal);
             set(BpodSystem.ProtocolFigures.auROC.splh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.SwitchParameter);
             set(BpodSystem.ProtocolFigures.auROC.clh, 'XData', [1 currentTrial], 'YData', [switchParameterCriterion switchParameterCriterion]);
-            
+            set(BpodSystem.ProtocolFigures.auROC.ax2, 'YLim', [0 1]);
             
             %% block transition lines
             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));

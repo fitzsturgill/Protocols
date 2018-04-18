@@ -62,6 +62,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             if ~isempty(thesePlusTrials)
                 thesePlusTrials = thesePlusTrials(end - min(bss.ROCwindow, length(thesePlusTrials)) + 1:end);
                 dataPlus = BpodSystem.Data.AnswerLicks.rate(thesePlusTrials);
+%                 dataPlus = randn(size(dataPlus)) + 1.5;
             else
                 dataPlus = [];
             end
@@ -69,6 +70,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
             if ~isempty(theseMinusTrials)
                 theseMinusTrials = theseMinusTrials(end - min(bss.ROCwindow, length(theseMinusTrials)) + 1:end);
                 dataMinus = BpodSystem.Data.AnswerLicks.rate(theseMinusTrials);
+%                 dataMinus = randn(size(dataMinus)); % for testing
             else
                 dataMinus = [];
             end
@@ -91,8 +93,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_answerLic
         
         % compute hit rate
         HitRate = length(find(outcomes(beginHitRate:end) == 1)) / length(find(ismember(outcomes(beginHitRate:end), [1 -1]))); % 
-        disp(['Hit rate is ' num2str(HitRate)]);
-        
+%         disp(['Hit rate is ' num2str(HitRate)]);
         % compute fraction significant trials(the switch parameter)
         if (nTrialsCurrent >= bss.minTrials) && (HitRate >= bss.minHitRate)
             % keeper trials have positive auROC and are significant
