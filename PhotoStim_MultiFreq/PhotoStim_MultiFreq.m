@@ -9,9 +9,9 @@ TaskParameters = BpodSystem.ProtocolSettings;
 if isempty(fieldnames(TaskParameters))
     TaskParameters.GUI.NTrials = 160;
     
-    TaskParameters.GUI.StimFreq.Freq = [5, 10, 20, 40, 80]';
-    TaskParameters.GUI.StimFreq.Active = ones(size(TaskParameters.GUI.StimFreq.Freq,1),1);
-    TaskParameters.GUI.StimFreq.Amplitude = zeros(size(TaskParameters.GUI.StimFreq.Freq,1),1) + 2.5;
+    TaskParameters.GUI.StimFreq.Freq = [10, 10, 10, 40, 80]';
+    TaskParameters.GUI.StimFreq.Active = [1 1 1 0 0]';
+    TaskParameters.GUI.StimFreq.Amplitude = [2 2.5 3 1 1]';
     TaskParameters.GUIMeta.StimFreq.Style = 'table';
     TaskParameters.GUIMeta.StimFreq.String = 'Stim Freq';
     TaskParameters.GUIMeta.OdorTable.ColumnLabel = {'Freq','Active','Amplitude'};
@@ -19,12 +19,12 @@ if isempty(fieldnames(TaskParameters))
     TaskParameters.GUI.PulsePalOutputChannels = 34; % not really 34, stands for 3 and 4
     TaskParameters.GUI.PulsePalOutputTTL = 3; % this, when specified as a channel, overrides PulsePalOutputChannels with respect to voltage amplitude, makes voltage 5V (TTL logic)
     TaskParameters.GUI.BpodTriggerChannel = 2;
-    TaskParameters.GUI.ITI = 2;
+    TaskParameters.GUI.ITI = 3;
     
     TaskParameters.GUIPanels.GeneralParams = {'NTrials','ITI','BpodTriggerChannel','PulsePalTriggerChannel','PulsePalOutputChannels','PulsePalOutputTTL'};
      TaskParameters.GUIPanels.StimFreqTable ={'StimFreq'};
     
-    TaskParameters.GUI.NPulses = 10;
+    TaskParameters.GUI.NPulses = 20;
     TaskParameters.GUI.PulseDuration_ms = 1;
     TaskParameters.GUIPanels.TrainParams = {'NPulses','PulseDuration_ms'};
     
