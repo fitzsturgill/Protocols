@@ -246,9 +246,9 @@ function CuedOutcome_odor_complete
                 5, 0.4 * pfl;... % punish
                 6, 0.4 * 0.1;... % omit
                 % uncued
-                7, 0.1;... % reward
+                7, 0.15;... % reward
                 8, 0.05;... % punish
-                9, 0.05;... % neutral
+                9, 0;... % neutral
                 ];
         else
             typeMatrix = [...
