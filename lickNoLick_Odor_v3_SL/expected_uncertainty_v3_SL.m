@@ -1,4 +1,4 @@
-function blocks = expected_uncertainty_SL
+function blocks = expected_uncertainty_v3_SL
 
 blocks = {};
 
@@ -50,6 +50,7 @@ ST.P = [0.3; 0.3; 0.3; 0.1];
 ST.CS = [1; 2; 3; 0]; % will be used to select S.GUI.Odor1Valve
 ST.CSValence = [1; 1; 1; 1];
 ST.US = {'Reward'; 'Reward'; 'Reward'; 'Reward'};   % Reward
+ST.WaterAmount = {8; 5; 2; 8};
 ST.Instrumental = [0; 0; 0; 0];
 S.Table = struct2table(ST);
 S.LinkTo = 0;
