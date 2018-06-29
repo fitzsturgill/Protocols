@@ -52,7 +52,7 @@ while iTrial <= TaskParameters.GUI.NTrials
     
     TaskParameters = BpodParameterGUI('sync', TaskParameters); % Sync parameters with BpodParameterGUI plugin
     
-    %uodate current trial fields
+    %update current trial fields
     ActiveFreqIdx = find(logical(TaskParameters.GUI.StimFreq.Active));
     idx = mod(iTrial,length(ActiveFreqIdx));
     if idx == 0
