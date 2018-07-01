@@ -1,5 +1,6 @@
 function lickNoLick_Odor_v2
-
+    % Protocol for pavlovian and instrumental odor conditioning
+    % Written by Fitz Sturgill circa 2017.
     global BpodSystem
     
     %% CS valence is important-   explain here!!!

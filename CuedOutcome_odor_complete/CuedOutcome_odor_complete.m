@@ -32,9 +32,13 @@ function CuedOutcome_odor_complete
 
 
     defaults = {... % If settings file was an empty struct, populate struct with default settings
+        'GUIPanels.Photometry', {'LED1_amp', 'LED2_amp', 'PhotometryOn'};...
         'GUI.LED1_amp', 1.5;...
         'GUI.LED2_amp', 0;...
         'GUI.PhotometryOn', 1;...
+        'GUIPanels.Behavior', {'mu_iti', 'highValueOdorValve', 'lowValueOdorValve', 'Delay', 'Epoch',...
+            'highValuePunishFraction', 'lowValuePunishFraction', 'PunishValveTime', 'Reward', 'OdorTime',...
+            'Delay','PunishOn','neutralToneOn'};...        
         'GUI.mu_iti', 6;... % 6;... % approximate mean iti duration
         'GUI.highValueOdorValve', 5;... % output pin on the slave arduino switching a particular odor valve
         'GUI.lowValueOdorValve', 6;...
@@ -47,8 +51,32 @@ function CuedOutcome_odor_complete
         'GUI.OdorTime', 1;... % 0.5s tone, 1s delay        
         'GUI.Delay', 1;... %  time after odor and before US delivery (or omission)
         'GUI.PunishOn', 1;...
-        'GUI.neutralToneOn', 1;... % select to NOT signal omissions with neutral tone
-        'GUIMeta.neutralToneOn.Style', 'checkbox';...            
+        'GUI.neutralToneOn', 0;... % select to NOT signal omissions with neutral tone
+        'GUIMeta.neutralToneOn.Style', 'checkbox';...                
+
+        % stuff for light tagging, integrated within behavioral protocol
+        % (choose amplitude 0 to not do tagging every nth trial)
+        'GUI.taggingOn', 0;...
+        'GUIMeta.taggingOn.Style', 'checkbox';...
+        'GUI.StimFreq.Freq', [10, 10, 10, 40, 80]';...
+        'GUI.StimFreq.Active', [1 1 1 0 0]';...
+        'GUI.StimFreq.Amplitude', [2 2.5 3 1 1]';...
+        'GUIMeta.StimFreq.Style', 'table';...
+        'GUIMeta.StimFreq.String', 'Stim Freq';...
+        'GUIMeta.StimFreq.ColumnLabel', {'Freq','Active','Amplitude'};...
+        'GUI.PulsePalTriggerChannel', 1;...
+        'GUI.PulsePalOutputChannels', 34;... % not really 34, stands for 3 and 4
+        'GUI.PulsePalOutputTTL', 3;... % this, when specified as a channel, overrides PulsePalOutputChannels with respect to voltage amplitude, makes voltage 5V (TTL logic)
+        'GUI.BpodTriggerChannel', 2;...
+        'GUIPanels.GeneralParams', {'taggingOn', 'BpodTriggerChannel','PulsePalTriggerChannel','PulsePalOutputChannels','PulsePalOutputTTL'};...
+        'GUIPanels.StimFreqTable', {'StimFreq'};...    
+        'GUI.NPulses', 10;...
+        'GUI.PulseDuration_ms', 1;...
+        'GUIPanels.TrainParams', {'NPulses','PulseDuration_ms'};...
+        'GUITabs.Photometry', {'Photometry'};...
+        'GUITabs.Behavior', {'Behavior'};...
+        'GUITabs.Tagging', {'GeneralParams', 'StimFreqTable', 'TrainParams'};...
+        
         
         'NoLick', 0;... % forget the nolick
         'ITI', [];... %ITI duration is set to be exponentially distributed later
@@ -90,6 +118,19 @@ function CuedOutcome_odor_complete
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+    
+    %% Optogenetic tagging
+    if S.GUI.taggingOn
+        % load default PulsePal stimulus train matrix
+        load('LightTrain.mat');
+        ParameterMatrixDefault = ParameterMatrix;
+        try % detect if pulse pal is on...
+            ProgramPulsePal(ParameterMatrixDefault);        
+        catch % if you're a dolt and forgot to start pulse pal
+            PulsePal;
+            ProgramPulsePal(ParameterMatrixDefault);                    
+        end
+    end
 
     %% Initialize olfactometer and point grey camera
     % retrieve machine specific olfactometer settings
@@ -157,10 +198,13 @@ function CuedOutcome_odor_complete
     BpodSystem.Data.Epoch = [];
     BpodSystem.Data.Cs = {};
     BpodSystem.Data.Us = {};
+    % in case we are doing opto-tagging during the protocol
+    BpodSystem.Data.StimFreq = [];
+    BpodSystem.Data.StimFreqIdx = [];
+    BpodSystem.Data.StimAmp = [];
 
 
     %% init outcome plot
-
     scrsz = get(groot,'ScreenSize');
     % i need to mimic bpod integrated figures (see other protocols) so it
     % is closed properly on bpod protocol stop
@@ -364,10 +408,18 @@ function CuedOutcome_odor_complete
             'Timer',UsTime,... % time will be 0 for omission
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
             'OutputActions', UsAction);
-        sma = AddState(sma, 'Name','PostUsRecording',...
-            'Timer',S.PostUsRecording,...  
-            'StateChangeConditions',{'Tup','exit'},...
-            'OutputActions',{});
+        if S.GUI.taggingOn % if we are doing opto-tagging
+            sma = AddState(sma, 'Name','PostUsRecording',...
+                'Timer',S.PostUsRecording,...  
+                'StateChangeConditions',{'Tup','DeliverStimulus'},...
+                'OutputActions',{});            
+            updatePulsePal; % nested function for legibility
+        else % if you aren't tagging, just exit state machine
+            sma = AddState(sma, 'Name','PostUsRecording',...
+                'Timer',S.PostUsRecording,...  
+                'StateChangeConditions',{'Tup','exit'},...
+                'OutputActions',{});
+        end
 
         %%
         BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
@@ -479,32 +531,113 @@ function CuedOutcome_odor_complete
             return
         end 
     end
-end
+    %% Nested function for code legibility
+    function updatePulsePal        
+        % implement/~port 
+        % Torben's multi-stim tagging protocol into the cuedOutcome task
+        
+        ActiveFreqIdx = find(logical(S.GUI.StimFreq.Active));
+        idx = mod(currentTrial,length(ActiveFreqIdx));
+        if idx == 0
+            idx=length(ActiveFreqIdx);
+        end
+        StimFreq = S.GUI.StimFreq.Freq(ActiveFreqIdx(idx));
+        StimAmp = S.GUI.StimFreq.Amplitude(ActiveFreqIdx(idx));
+        BpodSystem.Data.StimFreq(currentTrial) = StimFreq;
+        BpodSystem.Data.StimFreqIdx(currentTrial) = ActiveFreqIdx(idx);
+        BpodSystem.Data.StimAmp(currentTrial) = StimAmp;
 
-% Index exceeds matrix dimensions.
-% 
-% Error in phDemodOnline (line 10)
-%         nidaq.online.currentDemodData{1} = phDemod(nidaq.ai_data(:,1), nidaq.ao_data(:,1),
-%         nidaq.sample_rate, LED1_f, lowCutoff);
-% 
-% Error in processPhotometryOnline (line 7)
-%     phDemodOnline(currentTrial);
-% 
-% Error in CuedOutcome_odor_complete (line 368)
-%             processPhotometryOnline(currentTrial);
-% 
-% Error in run (line 96)
-% evalin('caller', [script ';']);
-% 
-% Error in LaunchManager>pushbutton1_Callback (line 300)
-%         run(ProtocolPath);
-% 
-% Error in gui_mainfcn (line 95)
-%         feval(varargin{:});
-% 
-% Error in LaunchManager (line 61)
-%     gui_mainfcn(gui_State, varargin{:});
-% 
-% Error in
-% matlab.graphics.internal.figfile.FigFile/read>@(hObject,eventdata)LaunchManager('pushbutton1_Callback',hObject,eventdata,guidata(hObject)) 
-% Error while evaluating DestroyedObject Callback
+
+        %Program PulsePal
+        ParameterMatrix = ParameterMatrixDefault;
+        OutputChannels = [1:4] .* ismember('1234',num2str(S.GUI.PulsePalOutputChannels));
+        OutputChannels = OutputChannels(OutputChannels>0);
+        OutputChannels = union(OutputChannels, S.GUI.PulsePalOutputTTL); % add the output TTL if not already specified in output channels    
+        %TriggerChannel
+        if S.GUI.PulsePalTriggerChannel == 1
+            ParameterMatrix(13,OutputChannels+1) = {1};
+            ParameterMatrix(14,OutputChannels+1) = {0};
+        elseif S.GUI.PulsePalTriggerChannel == 2
+            ParameterMatrix(13,OutputChannels+1) = {0};
+            ParameterMatrix(14,OutputChannels+1) = {1};
+        else
+            error('Unknown trigger channel')
+        end
+
+        %Inter-pulse interval
+        ParameterMatrix(8,OutputChannels+1)={1./StimFreq - S.GUI.PulseDuration_ms/1000};
+        %Burst Duration
+        ParameterMatrix(9,OutputChannels+1)={1./StimFreq*S.GUI.NPulses};
+        %stimulus train duration
+        stimDuration = 1./StimFreq*S.GUI.NPulses;
+        ParameterMatrix(11,OutputChannels+1)={stimDuration};
+
+        %single pulse duration
+        ParameterMatrix(5,OutputChannels+1)={S.GUI.PulseDuration_ms/1000};
+        %amplitude
+        ParameterMatrix(3,OutputChannels+1)={StimAmp};
+        %override amplitude for TTL IF amplitude > 0
+        if StimAmp
+            ParameterMatrix(3,S.GUI.PulsePalOutputTTL) = {5}; % 5V for TTL logic
+        else
+            ParameterMatrix(3,S.GUI.PulsePalOutputTTL) = {0}; % skip this one
+        end
+        ProgramPulsePal(ParameterMatrix);
+        
+        % append to state matrix
+        if BpodSystem.Data.StimFreqIdx(currentTrial)==1
+            sma = AddState(sma, 'Name', 'DeliverStimulus', ...
+                'Timer', 0,...
+                'StateChangeConditions', {'Tup', 'LightTrain_1'},...
+                'OutputActions', {});
+        elseif BpodSystem.Data.StimFreqIdx(currentTrial)==2
+            sma = AddState(sma, 'Name', 'DeliverStimulus', ...
+                'Timer', 0,...
+                'StateChangeConditions', {'Tup', 'LightTrain_2'},...
+                'OutputActions', {});
+        elseif BpodSystem.Data.StimFreqIdx(currentTrial)==3
+            sma = AddState(sma, 'Name', 'DeliverStimulus', ...
+                'Timer', 0,...
+                'StateChangeConditions', {'Tup', 'LightTrain_3'},...
+                'OutputActions', {});
+        elseif BpodSystem.Data.StimFreqIdx(currentTrial)==4
+            sma = AddState(sma, 'Name', 'DeliverStimulus', ...
+                'Timer', 0,...
+                'StateChangeConditions', {'Tup', 'LightTrain_4'},...
+                'OutputActions', {});
+        elseif BpodSystem.Data.StimFreqIdx(currentTrial)==5
+            sma = AddState(sma, 'Name', 'DeliverStimulus', ...
+                'Timer', 0,...
+                'StateChangeConditions', {'Tup', 'LightTrain_5'},...
+                'OutputActions', {});
+        else
+            error('Unknown freq stimulus when builiding state matrix.')
+        end
+        sma = AddState(sma, 'Name', 'LightTrain_1', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Tagging'},...
+            'OutputActions', {'BNCState',S.GUI.BpodTriggerChannel});
+        sma = AddState(sma, 'Name', 'LightTrain_2', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Tagging'},...
+            'OutputActions', {'BNCState',S.GUI.BpodTriggerChannel});
+        sma = AddState(sma, 'Name', 'LightTrain_3', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Tagging'},...
+            'OutputActions', {'BNCState',S.GUI.BpodTriggerChannel});
+        sma = AddState(sma, 'Name', 'LightTrain_4', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Tagging'},...
+            'OutputActions', {'BNCState',S.GUI.BpodTriggerChannel});
+        sma = AddState(sma, 'Name', 'LightTrain_5', ...
+            'Timer', 0,...
+            'StateChangeConditions', {'Tup', 'Tagging'},...
+            'OutputActions', {'BNCState',S.GUI.BpodTriggerChannel});
+        sma = AddState(sma, 'Name', 'Tagging', ...
+            'Timer', stimDuration,...
+            'StateChangeConditions', {'Tup', 'exit'},...
+            'OutputActions', {});        
+    end    
+%%
+end
+    
