@@ -115,6 +115,7 @@ function CuedOutcome_odor_complete
     SF = 192000; 
     % linear ramp of sound for 10ms at onset and offset
     neutralTone = taperedSineWave(SF, S.ToneFreq, S.ToneDuration, 0.01); % 10ms taper
+    neutralTone = neutralTone / 10;
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, neutralTone);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';

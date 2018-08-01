@@ -12,19 +12,19 @@ function lickNoLick_Aud
     PhotometryRasterFcnList = {'lickNoLick_Sound_PhotometryRasters', 'LNL_Sound_pRasters_3Sounds', 'LNL_pRasters_bySound'};
     defaults = {...
         'GUIPanels.Photometry', {'LED1_amp', 'LED2_amp', 'PhotometryOn'};...
-        'GUI.LED1_amp', 1.5;...
-        'GUI.LED2_amp', 0;...
+        'GUI.LED1_amp', 2.5;...
+        'GUI.LED2_amp', 2.5;...
         'GUI.PhotometryOn', 1;...
         
-        'GUIPanels.Timing', {'Epoch', 'NoLick', 'FP', 'FPMean', 'FPMin', 'FPMax', 'FPSD', 'FPDistrib', 'AnswerDelay', 'Answer', 'OutcomeDelay','FeedbackDelayOn', 'FeedbackDelay'};...
+        'GUIPanels.Timing', {'Epoch', 'NoLick', 'FP', 'FPMean', 'FPMin', 'FPMax', 'FPSD', 'FPDistrib', 'AnswerDelay', 'Answer', 'OutcomeDelay','GausFeedbackDelayOn'};...
         'GUI.Epoch', 1;...
-        'GUI.NoLick', 1.5;... % mouse must stop licking for this period 
-        'GUI.FP', 0;... % foreperiod
+        'GUI.NoLick', 3;... % mouse must stop licking for this period 
+        'GUI.FP', 1;... % foreperiod
 %         'GUI.mu_iti', 6;... % if > 0, determines random ITI
-        'GUI.FPMean', 1.4;...
-        'GUI.FPMin', 0.1;...
-        'GUI.FPMax', 4;...
-        'GUI.FPSD',0.25;...
+        'GUI.FPMean', 1.4;...% foreperiod mean
+        'GUI.FPMin', 0.1;...% foreperiod min
+        'GUI.FPMax', 4;...% foreperiod max
+        'GUI.FPSD',0.25;...% foreperiod SD
         'GUI.FPDistrib', 'EXP';...
         'GUIMeta.FPDistrib.Style', 'popupmenutext';...
         'GUIMeta.FPDistrib.String',  S.FPDistribList;... 
@@ -32,25 +32,24 @@ function lickNoLick_Aud
         % !!!! set OutcomeDelay = Answer for fixed timing (as in pavlovian
         % conditioning)!!!
         'GUI.Answer', 1;... % answer period duration
-        'GUI.OutcomeDelay', 1;... % response (lick) to reinforcement delay, (in future may be updated trial-by-trial)
-        'GUI.FeedbackDelayOn', 0;...        
-        'GUIMeta.FeedbackDelayOn.Style', 'checkbox';... 
-        'GUI.FeedbackDelay', [0.2 0.4 0.3 0.03];...       
-        
-        'GUIPanels.Stimuli', {'UsePulsePal', 'MeanSoundFreq1', 'MeanSoundFreq2', 'SoundAmplitude', 'Reward', 'PunishValveTime', 'PunishSoundOn', 'PunishSoundAmplitude', 'PunishSoundDuration', 'WhiteNoiseOn', 'WhiteNoiseAmplitude'};... %'neutralToneOn', 'TsToneOn'};...
+        'GUI.OutcomeDelay', 0;... % response (lick) to reinforcement delay, (in future may be updated trial-by-trial)
+        'GUI.GausFeedbackDelayOn', 0;...        
+        'GUIMeta.GausFeedbackDelayOn.Style', 'checkbox';... 
+              
+        'GUIPanels.Stimuli', {'UsePulsePal', 'MeanSoundFreq1', 'MeanSoundFreq2', 'SoundAmplitude', 'Reward', 'PunishValveTime', 'PunishSoundOn', 'PunishSoundAmplitude', 'WhiteNoiseOn', 'WhiteNoiseAmplitude'};... %'neutralToneOn', 'TsToneOn'};...
         'GUI.UsePulsePal', 0;...         
-        'GUI.MeanSoundFreq1', 8000;... % Hz; Go A --- easy trials
-        'GUI.MeanSoundFreq2', 4000;... % Nogo A --- easy trials
-        'GUI.SoundAmplitude', 60;...  % sound amplitude in db
+        'GUI.MeanSoundFreq1', 4000;... % Hz; Go A --- easy trials
+        'GUI.MeanSoundFreq2', 8000;... % Nogo A --- easy trials
+        'GUI.SoundAmplitude', 50;...  % sound amplitude in db
         'GUI.Reward', 5;...
         'GUI.PunishValveTime', 0.2;... %s  
         'GUI.PunishSoundOn', 0;...
         'GUIMeta.PunishSoundOn.Style', 'checkbox';...
-        'GUI.PunishSoundAmplitude', 1;... % punish sound amplitude in db
-        'GUI.PunishSoundDuration', 0.25;...
+        'GUI.PunishSoundAmplitude', 60;... % punish sound amplitude in db
+%         'GUI.PunishSoundDuration', 0.25;...
         'GUI.WhiteNoiseOn', 0;...
         'GUIMeta.WhiteNoiseOn.Style', 'checkbox';... 
-        'GUI.WhiteNoiseAmplitude', 1;... % whitenoise sound amplitude in db
+        'GUI.WhiteNoiseAmplitude', 20;... % whitenoise sound amplitude in db
 %         'GUIMeta.neutralToneOn.Style', 'checkbox';...
 %         'GUIMeta.TsToneOn.Style', 'checkbox';...      
         'GUIPanels.Blocks', {'BlockFcn', 'PhotometryRasterFcn', 'Block'};...
@@ -88,9 +87,34 @@ function lickNoLick_Aud
 %         'SwFcn_BlockRRD_minTrials', 20;...     
 
 %         'OdorTime', 1;...
+        'FP', 1;... % foreperiod
+%         'FBmn', 0.2;...   % FeedbackDelay minimum
+%         'FBmx', 0.4;...   % FeedbackDelay maximum
+%         'FBmns', 0.3;...  % FeedbackDelay mean
+%         'FBsdg', 0.03;...  % FeedbackDelay SD
+
+%         'FBmn', 0.5;...   % FeedbackDelay minimum
+%         'FBmx', 2;...   % FeedbackDelay maximum
+%         'FBmns', 1.4;...  % FeedbackDelay mean
+%         'FBsdg', 0.25;...  % FeedbackDelay SD    
+
+%         'FBmn', 0.2;...   % FeedbackDelay minimum
+%         'FBmx', 2;...   % FeedbackDelay maximum
+%         'FBmns', 1;...  % FeedbackDelay mean
+%         'FBsdg', 0.1;...  % FeedbackDelay SD    
+
+        'FBmn', 0.2;...   % FeedbackDelay minimum
+        'FBmx', 1;...   % FeedbackDelay maximum
+        'FBmns', 0.5;...  % FeedbackDelay mean
+        'FBsdg', 0.05;...  % FeedbackDelay SD 
+        
         'SoundDuration', 0.5;...
         'SoundSamplingRate', 192000;...        
 %         'TsTime', 1;...
+        'NoiseDuration', 1;   
+        'Ramp', 0;
+        'NoiseMinFreq', 2000;
+        'NoiseMaxFreq', 12000;
         'PreCsRecording', 4;...
         'PostUsRecording', 4;...
         'currentValve', [];... % holds Sound valve # for current trial
@@ -109,7 +133,7 @@ function lickNoLick_Aud
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
-%     S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+    S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
     %% Load Tables
     bfh = str2func(S.GUI.BlockFcn);
     try
@@ -119,8 +143,21 @@ function lickNoLick_Aud
     end
     
     %% init photometry raster function handle
-    prfh = str2func(S.GUI.PhotometryRasterFcn);
-    
+    prfh = str2func(S.GUI.PhotometryRasterFcn);    
+    %% Update NIDAQ
+    %     S.nidaq.duration = S.PreCsRecording + S.TsTime + S.SoundDuration + S.GUI.AnswerDelay + S.GUI.Answer + S.PostUsRecording;
+    %     startX = 0 - S.PreCsRecording - S.TsTime; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
+    S.nidaq.duration = S.PreCsRecording + S.GUI.FP + S.SoundDuration + S.GUI.AnswerDelay + S.GUI.OutcomeDelay + S.PostUsRecording;
+    startX = 0 - S.PreCsRecording - S.GUI.FP; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
+    BpodSystem.ProtocolSettings = S; % copy settings back because syncPhotometrySettings relies upon BpodSystem.ProtocolSettings      
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+        S = initPhotometry(S);
+    end
+    %% photometry plots
+    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
+        updatePhotometryPlot('init');
+        prfh('init', 'baselinePeriod', [1 S.PreCsRecording])
+    end
 
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
@@ -129,6 +166,7 @@ function lickNoLick_Aud
     BpodSystem.ProtocolFigures.lickRaster.AxSound3 = subplot(1, 3, 3); title('Sound 3');
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
+          PsychToolboxSoundServer('init')
 
 %         % linear ramp of sound for 10ms at onset and offset
 %         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
@@ -150,8 +188,7 @@ function lickNoLick_Aud
 %         PsychToolboxSoundServer('Load', 3, WhiteNoise);
 %         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
 
-    %% Generate feedback white noise
-        
+    %% Generate feedback white noise        
 
         load('PulsePalParamFeedback.mat');
         if S.GUI.UsePulsePal
@@ -169,7 +206,6 @@ function lickNoLick_Aud
         else
             soundArg = 0;
         end
-
     
         %% Initialize olfactometer and point grey camera
         % retrieve machine specific olfactometer settings
@@ -258,6 +294,8 @@ function lickNoLick_Aud
     
     %% Main trial loop
     for currentTrial = 1:MaxTrials
+        
+        
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         SaveBpodProtocolSettings;
@@ -285,10 +323,38 @@ function lickNoLick_Aud
  
         Sound1 = SoundGenerator_SL(S.SoundSamplingRate, S.GUI.MeanSoundFreq1, S.SoundDuration, SoundAmplitude);
         Sound2 = SoundGenerator_SL(S.SoundSamplingRate, S.GUI.MeanSoundFreq2, S.SoundDuration, SoundAmplitude);
-        PsychToolboxSoundServer('init')
+        
+        % white noise 
+
+%         WhiteNoise = NoiseGenerator_SL(S.SoundSamplingRate, Ramp, SignalMinFreq, SignalMaxFreq, NoiseDuration, S.GUI.WhiteNoiseAmplitude);
+%         PsychToolboxSoundServer('Load', 3, WhiteNoise);
+        noise1 = 2 * rand(1, length (Sound1)) - 1;
+        WhiteNoise = NoiseGenerator_SL (noise1, S.SoundSamplingRate, S.Ramp, S.NoiseMinFreq, S.NoiseMaxFreq, S.GUI.WhiteNoiseAmplitude);
+ 
+        if S.GUI.WhiteNoiseOn
+            Sound1 =  Sound1 + WhiteNoise;
+            Sound2 =  Sound2 + WhiteNoise;
+        else
+            Sound1 =  Sound1;
+            Sound2 =  Sound2;
+        end
+        
         PsychToolboxSoundServer('Load', 1, Sound1);
         PsychToolboxSoundServer('Load', 2, Sound2); 
         
+        % punish sound 
+        samplenum=round(S.SoundSamplingRate * S.NoiseDuration);
+        noise2 = 2 * rand(1, samplenum) - 1;%make uniform noise -1 to 1
+        PunishSound = NoiseGenerator_SL(noise2, S.SoundSamplingRate, S.Ramp, S.NoiseMinFreq, S.NoiseMaxFreq, S.GUI.PunishSoundAmplitude);
+        PsychToolboxSoundServer('Load', 4, PunishSound);
+        if S.GUI.PunishSoundOn
+            PunishSoundCode = 4;
+        else
+            PunishSoundCode = 0;
+        end
+        
+        BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+       
         lickOutcome = S.Block.Table.US{TrialType};
         if ~S.Block.Table.Instrumental(TrialType)
             noLickOutcome = S.Block.Table.US{TrialType};
@@ -304,32 +370,94 @@ function lickNoLick_Aud
         else
             WaterAmount = S.GUI.Reward;
             S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
-        end
+        end                  
         
-      
-%         if S.GUI.neutralToneOn
-%             neutralCode = 1;
-%         else
-%             neutralCode = 0;
-%         end
-%         
-%         if S.GUI.TsToneOn
-%             TsCode = 3;
-%         else
-%             TsCode = 0;
-%         end
-        
-        if S.GUI.WhiteNoiseOn
-            wnCode = 3;
-        else
-            wnCode = 0;
+        % Prepare foreperiod
+        switch S.GUI.FPDistrib
+            case 'EXP'
+                FPtemp = exprnd(S.GUI.FPMean);
+                while any(FPtemp<S.GUI.FPMin) || any(FPtemp>S.GUI.FPMax)
+                    FPtemp = exprnd(S.GUI.FPMean);
+                end     
+                S.FP = FPtemp;
+
+            case 'UNIFORM'
+                S.FP = unifrnd(S.GUI.FPMin,S.GUI.FPMax);
+
+            case 'GAUSS'             
+                FPtemp = normrnd(S.GUI.FPMean, S.GUI.FPSD);         
+                while any(FPtemp<S.GUI.FPMin) || any(FPtemp>S.GUI.FPMax)
+                    FPtemp = normrnd(S.GUI.FPMean, S.GUI.FPSD); 
+                end
+                S.FP = FPtemp;
+                           
+            case 'BIMODAL'
+                FPmin = 0.1;  % FPMin = 0.1;
+                FPmax = 3;  % FPMax = 3;
+                mng1 = 0.3;   % mng1 = 0.3;   % parameters for the Gaussians
+                mng2 = 2;   % mng2 = 2;
+                sdg = 0.15;   % sdg = 0.15;
+                pmx1 = 0.35;   % mixing probabilities
+                pmx2 = 0.35;
+                pmx3 = 1 - pmx1 - pmx2;
+                
+                FPs1 = normrnd(mng1,sdg);
+                while any(FPs1>FPmax) || any(FPs1<FPmin)
+                    FPs1 = normrnd(mng1,sdg);
+                end
+                FPs2 = normrnd(mng2,sdg);
+                while any(FPs2>FPmax) || any(FPs2<FPmin)
+                    FPs2 = normrnd(mng2,sdg);
+                end
+                FPs3 = unifrnd(FPmin,FPmax);
+
+                prr = randi(3);
+                switch (prr)
+                   case 1
+                      S.FP = FPs1;
+                   case 2
+                      S.FP = FPs2;
+                   case 3
+                      S.FP = FPs3;
+                   otherwise
+                        disp('weird');
+                end                
+                
+            case 'UNIMODAL'  
+                FPmin = 0.1;  % FPMin = 0.1;
+                FPmax = 3;  % FPMax = 3;
+                mng = 1.4;   % mng = 1.4;   % parameters for the Gaussians
+                sdg = 0.25;   % sdg = 0.25;
+                pmx1 = 0.65;   % mixing probabilities
+                pmx2 = 1 - pmx1;
+                
+                FPs1 = normrnd(mng,sdg);
+                while any(FPs1>FPMax) | any(FPs1<FPMin)
+                     FPs1 = normrnd(mng,sdg);
+                end
+                FPs2 = unifrnd(FPMin,FPMax);
+                prr = randi(3);
+                switch (prr)
+                   case 1
+                      S.FP = FPs1;
+                   case 2
+                      S.FP = FPs1;
+                   case 3
+                      S.FP = FPs2;
+                end  
         end
+        S.GUI.FP = S.FP;
         
-        if S.GUI.PunishSoundOn
-            PunishSoundCode = 4;
-        else
-            PunishSoundCode = 0;
-        end
+        % Feedback delay distribution (Gaussian)
+         if S.GUI.GausFeedbackDelayOn
+            FBtemp=normrnd(S.FBmns, S.FBsdg);
+            while any(FBtemp<S.FBmn) || any(FBtemp>S.FBmx)
+                FBtemp=normrnd(S.FBmns, S.FBsdg);
+            end
+            S.GUI.OutcomeDelay = FBtemp;             
+         else
+            S.GUI.OutcomeDelay = S.GUI.OutcomeDelay;
+         end
         
         %% update Sound valve number for current trial
         if ~BpodSystem.EmulatorMode
@@ -341,137 +469,28 @@ function lickNoLick_Aud
                 continue
             else
                 disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+                disp(['S.FP = ' num2str(S.FP)]);
+                disp(['S.GUI.OutcomeDelay = ' num2str(S.GUI.OutcomeDelay)]);
             end
         end
         disp(['*** Trial Type = ' num2str(TrialType) ' Block = ' num2str(S.GUI.Block) ' ***']);
-        S.Block.Table % display current block (should have this be in a GUI window eventually)
-
-%         %% Expotentially distributed ITIs
-%         if S.GUI.mu_iti
-%             S.GUI.ITI = inf;
-%             while S.GUI.ITI > 3 * S.GUI.mu_iti   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
-%                 S.GUI.ITI = exprnd(S.GUI.mu_iti);
-%             end        
-%         end    
-        %% Prepare foreperiod
-        switch S.GUI.FPDistrib
-            case 1 % EXP
-                mns = value(S.GUI.FPMean);
-                FPMean2 = mns(1) - value(S.GUI.FPMin);
-                FPMax2 = value(S.GUI.FPMax) - value(S.GUI.FPMin);
-                temp = exprnd(FPMean2,NumTrials,1);
-                while any(temp>FPMax2)
-                    inx = temp > FPMax2;
-                    temp(inx) = exprnd(FPMean2,sum(inx),1);
-                end
-                temp = temp + value(FPMin);
-                S.GUI.FP = temp;
-            case 2 % UNIFORM
-                S.GUI.FP = unifrnd(value(S.GUI.FPMin),value(S.GUI.FPMax),NumTrials,1);
-            case 3 % GAUSS
-                mns = value(S.GUI.FPMean);
-                FPMean2 = mns(1) - value(S.GUI.FPMin);
-                FPMax2 = value(S.GUI.FPMax) - value(S.GUI.FPMin);
-                temp = normrnd(FPMean2,value(FPSD),NumTrials,1);
-                while any(temp>FPMax2) || any(temp<0)
-                    inx = temp > FPMax2 | temp < 0;
-                    temp(inx) = normrnd(FPMean2,value(FPSD),sum(inx),1);
-                end
-                temp = temp + value(S.GUI.FPMin);
-                S.GUI.FP = temp;
-            case 4 % BIMODEL
-                FPmin = value(S.GUI.FPMin);  % FPMin = 0.1;
-                FPmax = value(S.GUI.FPMax);  % FPMax = 3;
-                mns = value(S.GUI.FPMean);
-                mng1 = mns(1);   % mng1 = 0.3;   % parameters for the Gaussians
-                mng2 = mns(end);   % mng2 = 2;
-                sdg = value(S.GUI.FPSD);   % sdg = 0.15;
-                pmx1 = 0.35;   % mixing probabilities
-                pmx2 = 0.35;
-                pmx3 = 1 - pmx1 - pmx2;
-                
-                FPs1 = random('Normal',mng1,sdg,1,NumTrials);
-                while any(FPs1>FPmax) || any(FPs1<FPmin)
-                    inx = FPs1 > FPmax  | FPs1 < FPmin;
-                    FPs1(inx) = random('Normal',mng1,sdg,1,sum(inx));
-                end
-                FPs2 = random('Normal',mng2,sdg,1,NumTrials);
-                while any(FPs2>FPmax) || any(FPs2<FPmin)
-                    inx = FPs2 > FPmax  | FPs2 < FPmin;
-                    FPs2(inx) = random('Normal',mng2,sdg,1,sum(inx));
-                end
-                FPs3 = random('Uniform',FPmin,FPmax,1,NumTrials);
-                prr = rand(1,NumTrials);
-                rr = zeros(3,NumTrials);
-                rr(1,prr<pmx1) = 1;
-                rr(2,prr>=pmx1&prr<(pmx1+pmx2)) = 1;
-                rr(3,prr>=(pmx1+pmx2)) = 1;
-                S.GUI.FP = rr(1,:) .* FPs1 + rr(2,:) .* FPs2 + rr(3,:) .* FPs3;
-            case 5 % UNIMODEL  
-                FPmin = value(S.GUI.FPMin);  % FPMin = 0.1;
-                FPmax = value(S.GUI.FPMax);  % FPMax = 3;
-                mns = value(S.GUI.FPMean);
-                mng = mns(1);   % mng = 1.4;   % parameters for the Gaussians
-                sdg = value(S.GUI.FPSD);   % sdg = 0.25;
-                pmx1 = 0.65;   % mixing probabilities
-                pmx2 = 1 - pmx1;
-                
-                FPs1 = random('Normal',mng,sdg,1,NumTrials);
-                while any(FPs1>FPMax) | any(FPs1<FPMin)
-                    inx = FPs1 > FPMax  | FPs1 < FPMin;
-                    FPs1(inx) = random('Normal',mng,sdg,1,sum(inx));
-                end
-                FPs2 = random('Uniform',FPMin,FPMax,1,NumTrials);
-                prr = rand(1,NumTrials);
-                rr = zeros(2,NumTrials);
-                rr(1,prr<pmx1) = 1;
-                rr(2,prr>=pmx1) = 1;
-                S.GUI.FP = rr(1,:) .* FPs1 + rr(2,:) .* FPs2;
-        end
-        
+        S.Block.Table % display current block (should have this be in a GUI window eventually)  
+   
         %% define the duration of PreCsRecording
 
-            S.PreCsRecording = 4 - S.GUI.FP % S.PreCsRecording + S.GUI.FP = 4
-                               
-         %% Feedback delay distribution (Gaussian)
-         if S.GUI.FeedbackDelayOn
-            allv = value(S.GUI.FeedbackDelay);
-            FBmn = allv(1);   % minimum
-            FBmx = allv(2);   % maximum
-            FBmns = allv(3);  % mean
-            FBsdg = allv(4);  % SD
-            FBmn2 = FBmns - FBmn;
-            FBmx2 = FBmx - FBmn;
-            FBtemp = normrnd(FBmn2,FBsdg,NumTrials,1);
-            while any(FBtemp>FBmx2) || any(FBtemp<0)
-              inx = FBtemp > FBmx2 | FBtemp < 0;
-              FBtemp(inx) = normrnd(FBmn2,FBsdg,sum(inx),1);
-            end
-            FBtemp = FBtemp + FBmn;
-            S.OutcomeDelay = FBtemp;             
-         else
-            S.OutcomeDelay = S.GUI.OutcomeDelay 
-         end
-        
+        S.PreCsRecording = 4 - S.GUI.FP; % S.PreCsRecording + S.GUI.FP = 4                                               
+
+        %% Update NIDAQ
+        S.nidaq.duration = S.PreCsRecording + S.GUI.FP + S.SoundDuration + S.GUI.AnswerDelay + S.GUI.OutcomeDelay + S.PostUsRecording;
+        startX = 0 - S.PreCsRecording - S.GUI.FP; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
+        BpodSystem.ProtocolSettings = S; % copy settings back because syncPhotometrySettings relies upon BpodSystem.ProtocolSettings      
+
         %% TO DO
         % setup global counter to track number of licks during answer
         % period
         
         BpodSystem.Data.Settings = S; % SAVE SETTINGS, USED BY UPDATEPHOTOMETRYRASTERS SUBFUNCTION CURRENTLY, but redundant with trialSettings        
        
-        %% Initialize NIDAQ
-%     S.nidaq.duration = S.PreCsRecording + S.TsTime + S.SoundDuration + S.GUI.AnswerDelay + S.GUI.Answer + S.PostUsRecording;
-%     startX = 0 - S.PreCsRecording - S.TsTime; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
-    S.nidaq.duration = S.PreCsRecording + S.GUI.FP + S.SoundDuration + S.GUI.AnswerDelay + S.OutcomeDelay + S.PostUsRecording;
-    startX = 0 - S.PreCsRecording - S.GUI.FP; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
-    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
-        S = initPhotometry(S);
-    end
-    %% photometry plots
-    if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
-        updatePhotometryPlot('init');
-        prfh('init', 'baselinePeriod', [1 S.PreCsRecording])
-    end
        %% Assemble state matrix
         sma = NewStateMatrix(); 
         sma = SetGlobalTimer(sma,1,S.SoundDuration + S.GUI.AnswerDelay); % Answer window   
@@ -525,7 +544,7 @@ function lickNoLick_Aud
             'StateChangeConditions', {'Tup', 'NoLickOutcome'},...
             'OutputActions', {});     
         sma = AddState(sma, 'Name', 'AnswerLick', ... 
-            'Timer', S.OutcomeDelay,...
+            'Timer', S.GUI.OutcomeDelay,...
             'StateChangeConditions', {'Tup', 'LickOutcome'},...
             'OutputActions', {'SoftCode', 255});             
         sma = AddState(sma, 'Name', 'NoLickOutcome',... % dummy state for alignment
@@ -555,7 +574,7 @@ function lickNoLick_Aud
         sma = AddState(sma, 'Name', 'PostUsRecording',...
             'Timer', S.PostUsRecording,...   % should end with global timer 2 but in case global timer 2 misfires, exit trial via 4 second timer
             'StateChangeConditions',{'GlobalTimer2_End','exit', 'Tup', 'exit'},...
-            'OutputActions',{});    
+            'OutputActions',{'SoftCode', 255});    
         
         
         %%
@@ -575,8 +594,13 @@ function lickNoLick_Aud
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
             %% Process NIDAQ session
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode            
-                try % in case photometry hicupped
+                try 
                     processPhotometryAcq(currentTrial);
+                catch
+                    disp('*** Data not saved, issue with processPhotometryAcq ***');
+                end
+                
+                try % in case photometry hicupped
                 %% online plotting
                     processPhotometryOnline(currentTrial);
                     updatePhotometryPlot('update', startX);  

@@ -135,7 +135,7 @@ function lickNoLick_Odor_v3_SL
         PsychToolboxSoundServer('Load', 1, neutralTone);
         
         % TrialStart sound
-        TsTone = taperedSineWave(SF, 20000, 0.1, 0.01); % 10ms taper
+        TsTone = taperedSineWave(SF, 4000, 0.1, 0.01); % 10ms taper
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 3, TsTone);
         

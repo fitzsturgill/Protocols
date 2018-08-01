@@ -129,6 +129,8 @@ function lickNoLick_Odor_v2
 
         % linear ramp of sound for 10ms at onset and offset
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
+        % kludge
+        neutralTone = neutralTone / 100;
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
         
