@@ -403,8 +403,12 @@ function lickNoLick_Odor_v2
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
             %% Process NIDAQ session
             if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode            
-                try % in case photometry hicupped
+                try % this shouldn't fail, just assigning to a cell array
                     processPhotometryAcq(currentTrial);
+                catch
+                    disp('*** Problem with saving, this should not happen ***');
+                end
+                try % in case photometry hicupped
                 %% online plotting
                     processPhotometryOnline(currentTrial);
                     updatePhotometryPlot('update', startX);  
