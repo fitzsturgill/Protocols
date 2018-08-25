@@ -58,6 +58,7 @@ function wheel_v1
 
         % linear ramp of sound for 10ms at onset and offset
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
+        neutralTone = neutralTone / 100;
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';

@@ -137,7 +137,7 @@ Duration = 0.1;
 Frequency = 2000;
     dt = 1/SF;
     t = 0:dt:Duration;
-    SineWave=sin(2*pi*Frequency*t);
+    SineWave=sin(2*pi*Frequency*t)/100;
 
     beeps = repmat([SineWave SineWave .* 0], 1, nBeeps);
 end
