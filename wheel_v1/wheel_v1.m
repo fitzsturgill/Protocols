@@ -123,21 +123,23 @@ function wheel_v1
 %         mode
         
         rewardTimes = max(0, nextReward - S.GUI.Baseline);
-        %% Deliver rewards with approximately flat hazard rate, ITI determined by reward timing        
-        while 1
-            thisTime = Inf;
-            while thisTime > S.GUI.max_IRI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
-                thisTime = exprnd(S.GUI.mu_IRI);
+        if S.GUI.Reward % only if you are giving some reward at all (i.e. reward amount not set to 0)
+            %% Deliver rewards with approximately flat hazard rate, ITI determined by reward timing        
+            while 1
+                thisTime = Inf;
+                while thisTime > S.GUI.max_IRI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                    thisTime = exprnd(S.GUI.mu_IRI);
+                end
+                if sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
+                    break
+                end
+                rewardTimes(end + 1) = thisTime; %really you are collecting durations of inter reward intervals, refer to state matrix construction block
             end
-            if sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
-                break
+            if length(rewardTimes) > 1 % reward occurs this trial (i.e. you didn't hit break in outer 'while' loop above)
+                nextReward = sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) - S.GUI.AcqLength;
+            else % no reward this trial, deduct trial length
+                nextReward = rewardTimes - S.GUI.AcqLength;
             end
-            rewardTimes(end + 1) = thisTime; %really you are collecting durations of inter reward intervals, refer to state matrix construction block
-        end
-        if length(rewardTimes) > 1 % reward occurs this trial (i.e. you didn't hit break in outer 'while' loop above)
-            nextReward = sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) - S.GUI.AcqLength;
-        else % no reward this trial, deduct trial length
-            nextReward = rewardTimes - S.GUI.AcqLength;
         end
         rewardThisTrial = (length(rewardTimes) - 1) * S.GUI.Reward;
         totalReward = totalReward + rewardThisTrial;
