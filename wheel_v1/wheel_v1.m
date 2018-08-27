@@ -122,7 +122,7 @@ function wheel_v1
 %         SaveBpodProtocolSettings; % don't want to save with alternateLED
 %         mode
         
-        rewardTimes = max(0, nextReward - S.GUI.Baseline);
+        rewardTimes = max(0, nextReward - S.GUI.Baseline); % delay reward if necessary so it doesn't occur during baseline period
         if S.GUI.Reward % only if you are giving some reward at all (i.e. reward amount not set to 0)
             %% Deliver rewards with approximately flat hazard rate, ITI determined by reward timing        
             while 1
@@ -130,16 +130,12 @@ function wheel_v1
                 while thisTime > S.GUI.max_IRI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
                     thisTime = exprnd(S.GUI.mu_IRI);
                 end
-                if sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
+                if S.GUI.Baseline + sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
                     break
                 end
                 rewardTimes(end + 1) = thisTime; %really you are collecting durations of inter reward intervals, refer to state matrix construction block
             end
-            if length(rewardTimes) > 1 % reward occurs this trial (i.e. you didn't hit break in outer 'while' loop above)
-                nextReward = sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) - S.GUI.AcqLength;
-            else % no reward this trial, deduct trial length
-                nextReward = rewardTimes - S.GUI.AcqLength;
-            end
+        nextReward = S.GUI.Baseline + sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) - S.GUI.AcqLength;            
         end
         rewardThisTrial = (length(rewardTimes) - 1) * S.GUI.Reward;
         totalReward = totalReward + rewardThisTrial;
@@ -147,10 +143,11 @@ function wheel_v1
         
         %% state matrix construction                
         sma = NewStateMatrix(); 
+        sma = SetGlobalTimer(sma,1,S.GUI.AcqLength); % photometry acq duration
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0.025,...
             'StateChangeConditions', {'Tup', 'Baseline'},...
-            'OutputActions', {'BNCState', npgBNCArg, 'WireState', npgWireArg});
+            'OutputActions', {'BNCState', npgBNCArg, 'WireState', npgWireArg, 'GlobalTimerTrig', 1});
         sma = AddState(sma, 'Name','Baseline',...
             'Timer',S.GUI.Baseline,...
             'StateChangeConditions',{'Tup','IRI1'},...
@@ -166,9 +163,9 @@ function wheel_v1
                 'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
                 'OutputActions', {'ValveState', S.GUI.RewardValveCode, 'SoftCode', 1});            
         end
-        sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % last IRI encompasses ITI
+        sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % use global timer
             'Timer', rewardTimes(end),...
-            'StateChangeConditions', {'Tup', 'exit'},...
+            'StateChangeConditions', {'GlobalTimer2_End','exit'},...
             'OutputActions', {});
         
         %%
