@@ -101,7 +101,6 @@ function wheel_v1
     nextReward = 0; % first reward delivered immediately after baseline in first trial
     totalReward = 0;
     for currentTrial = 1:MaxTrials
-        
         if S.GUI.alternateLEDs
             LEDmode = rem(currentTrial, 3);
             switch LEDmode
@@ -143,7 +142,7 @@ function wheel_v1
         
         %% state matrix construction                
         sma = NewStateMatrix(); 
-        sma = SetGlobalTimer(sma,1,S.GUI.AcqLength); % photometry acq duration
+        sma = SetGlobalTimer(sma,1,S.GUI.AcqLength + 0.025); % photometry acq duration
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0.025,...
             'StateChangeConditions', {'Tup', 'Baseline'},...
@@ -164,8 +163,8 @@ function wheel_v1
                 'OutputActions', {'ValveState', S.GUI.RewardValveCode, 'SoftCode', 1});            
         end
         sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % use global timer
-            'Timer', rewardTimes(end),...
-            'StateChangeConditions', {'GlobalTimer2_End','exit'},...
+            'Timer', 0,...
+            'StateChangeConditions', {'GlobalTimer1_End','exit'},...
             'OutputActions', {});
         
         %%
@@ -176,9 +175,11 @@ function wheel_v1
             preparePhotometryAcq(S);
         end
         %% Run state matrix
-        RawEvents = RunStateMatrix();  % Blocking!
-        disp('*** trial ended ***');
         tic;
+        RawEvents = RunStateMatrix();  % Blocking!
+        toc
+        disp('*** trial ended ***');
+
         %% Stop Photometry session
         if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             stopPhotometryAcq;   
@@ -210,5 +211,6 @@ function wheel_v1
         if BpodSystem.BeingUsed == 0
             stopPhotometryAcq;   
             return
-        end         
+        end
+        
     end
