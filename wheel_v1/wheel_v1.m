@@ -18,6 +18,10 @@ function wheel_v1
         'GUIMeta.ch2.Style', 'checkbox';...  
         'GUI.alternateLEDs', 0;... % alternate which LEDs are turned on (both on, 1 on, 2 on, both on, etc.);
         'GUIMeta.alternateLEDs.Style', 'checkbox';...
+        'GUI.LED1_f', 531;...
+        'GUI.LED2_f', 211;...        
+        'GUI.alternateMod', 0;... % alternate using and not using frequency modulation of the LEDs
+        'GUIMeta.alternateMod.Style', 'checkbox';...        
         'GUI.mu_IRI', 30;... % mean inter-reward interval
         'GUI.min_IRI', 2;...
         'GUI.max_IRI', 90;...
@@ -74,14 +78,13 @@ function wheel_v1
     if ~BpodSystem.EmulatorMode        
     % retrieve machine specific point grey camera settings
         addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
-        pgSettings = machineSpecific_pointGrey;
-        rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict         
+        pgSettings = machineSpecific_pointGrey;    
         switch pgSettings.triggerType
             case 'WireState'
                 npgWireArg = bitset(npgWireArg, pgSettings.triggerNumber); % its a wire trigger
             case 'BNCState'
                 npgBNCArg = bitset(npgBNCArg, pgSettings.triggerNumber); % its a BNC trigger
-        end
+        end       
     end
     
     %% alternate LED mode
@@ -93,6 +96,13 @@ function wheel_v1
         storedLED1_amp = S.GUI.LED1_amp;
         storedLED2_amp = S.GUI.LED2_amp;
     end
+    
+    %% alternate LED modulation mode
+    if S.GUI.alternateMod
+        % store initial LED settings
+        storedLED1_f = S.GUI.LED1_f;
+        storedLED2_f = S.GUI.LED2_f;
+    end    
     
     %% initialize trial types and outcomes
     MaxTrials = 1000;
@@ -115,6 +125,17 @@ function wheel_v1
                     S.GUI.LED2_amp = storedLED2_amp;
             end
         end
+        
+        if S.GUI.alternateMod
+            if rem(currentTrial, 2)
+                S.GUI.LED1_f = storedLED1_f;
+                S.GUI.LED2_f = storedLED2_f;
+            else
+                S.GUI.LED1_f = 0;
+                S.GUI.LED2_f = 0;         
+            end
+        end
+            
         disp([' *** Trial # ' num2str(currentTrial)]); 
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
