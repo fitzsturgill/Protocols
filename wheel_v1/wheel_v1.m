@@ -110,7 +110,8 @@ function wheel_v1
     %% Main trial loop
     nextReward = 0; % first reward delivered immediately after baseline in first trial
     totalReward = 0;
-    for currentTrial = 1:MaxTrials
+    for currentTrial = 1:MaxTrials 
+% %       for currentTrial = 1:22
         if S.GUI.alternateLEDs
             LEDmode = rem(currentTrial, 3);
             switch LEDmode
@@ -124,6 +125,17 @@ function wheel_v1
                     S.GUI.LED1_amp = 0;
                     S.GUI.LED2_amp = storedLED2_amp;
             end
+% %             if ~rem(currentTrial, 2)
+% %                 hackFactor = currentTrial - 1;
+% %             else
+% %                 hackFactor = currentTrial;
+% %             end
+% % 
+% %             if ismember(currentTrial, 21:22)
+% %                 hackFactor = 0;
+% %             end
+% %             S.GUI.LED1_amp = hackFactor/20 * storedLED1_amp;
+% %             S.GUI.LED2_amp = hackFactor/20 * storedLED2_amp;
         end
         
         if S.GUI.alternateMod
@@ -205,6 +217,9 @@ function wheel_v1
         if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             stopPhotometryAcq;   
         end
+        global nidaq
+        nidaq.LED1_amp
+        nidaq.LED2_amp
         
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
             %% Process NIDAQ session

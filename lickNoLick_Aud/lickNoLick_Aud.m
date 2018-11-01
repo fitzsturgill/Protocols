@@ -11,10 +11,12 @@ function lickNoLick_Aud
     blockFunctionList = {'gonogo_Aud_blocks'};
     PhotometryRasterFcnList = {'lickNoLick_Sound_PhotometryRasters', 'LNL_Sound_pRasters_3Sounds', 'LNL_pRasters_bySound'};
     defaults = {...
-        'GUIPanels.Photometry', {'LED1_amp', 'LED2_amp', 'PhotometryOn'};...
+        'GUIPanels.Photometry', {'LED1_amp', 'LED2_amp', 'PhotometryOn', 'LED1_f', 'LED2_f'};...
         'GUI.LED1_amp', 2.5;...
         'GUI.LED2_amp', 2.5;...
         'GUI.PhotometryOn', 1;...
+        'GUI.LED1_f', 531;...
+        'GUI.LED2_f', 211;...
         
         'GUIPanels.Timing', {'Epoch', 'NoLick', 'FP', 'FPMean', 'FPMin', 'FPMax', 'FPSD', 'FPDistrib', 'AnswerDelay', 'Answer', 'OutcomeDelay','GausFeedbackDelayOn'};...
         'GUI.Epoch', 1;...
@@ -258,6 +260,7 @@ function lickNoLick_Aud
     BpodSystem.Data.CSValence = []; % 1 = CS+, -1 = CS-, 0 = unCued or a 'control' Sound that doesn't affect outcomes or adaptive reversals
     BpodSystem.Data.ReinforcementOutcome = []; % i.e. Reward, Punish, WNoise, or Neutral
     BpodSystem.Data.WaterAmount = []; % i.e. WaterAmount
+    BpodSystem.Data.SoundAmplitude = []; % i.e. SoundAmplitude    
     BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
     BpodSystem.Data.SoundValve = []; % e.g. 1st sound = sound1, or sound2
     BpodSystem.Data.SoundValveIndex = []; % 1st Sound, 2nd Sound
@@ -610,7 +613,12 @@ function lickNoLick_Aud
                 end
             end
             %% collect and save data
-            BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
+%             try
+                BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
+%             catch ME
+%                 ME
+%                 BpodSystem.Data = struct();
+%             end
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)        
             
             %TrialOutcome -> NaN: future trial or omission, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)

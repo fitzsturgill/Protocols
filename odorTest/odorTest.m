@@ -13,7 +13,9 @@ function odorTest
         'GUI.odor2On', 1;... % % which odors to cycle through
         'GUIMeta.odor2On.Style', 'checkbox';...       
         'GUI.odor3On', 1;... % % which odors to cycle through
-        'GUIMeta.odor3On.Style', 'checkbox';...       
+        'GUIMeta.odor3On.Style', 'checkbox';...  
+        'GUI.odor4On', 1;... % % which odors to cycle through
+        'GUIMeta.odor4On.Style', 'checkbox';...       
     };
     S = setBpodDefaultSettings(S, defaults);
         %% Pause and wait for user to edit parameter GUI 
@@ -25,8 +27,8 @@ function odorTest
     SaveBpodProtocolSettings;
     
     
-    odorsOnIx = logical([S.GUI.odor1On S.GUI.odor2On S.GUI.odor3On]);
-    odorValves = [5 6 7];
+    odorsOnIx = find(logical([S.GUI.odor1On S.GUI.odor2On S.GUI.odor3On S.GUI.odor4On]));
+    odorValves = [5 6 7 8];
     odorsOn = odorValves(odorsOnIx);
     
     
@@ -36,10 +38,12 @@ function odorTest
     oneBeep = makeBeeps(1);
     twoBeep = makeBeeps(2);
     threeBeep = makeBeeps(3);
+    fourBeep = makeBeeps(4);
     PsychToolboxSoundServer('init')
     PsychToolboxSoundServer('Load', 1, oneBeep);
     PsychToolboxSoundServer('Load', 2, twoBeep);
     PsychToolboxSoundServer('Load', 3, threeBeep);
+    PsychToolboxSoundServer('Load', 4, fourBeep);
     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     
     
@@ -71,13 +75,16 @@ function odorTest
         switch rem(currentTrial, length(odorsOn))
             case 0
                 OdorValve = odorsOn(1);
-                softCode = 1;
+                softCode = odorsOnIx(1);
             case 1
                 OdorValve = odorsOn(2);
-                softCode = 2;
+                softCode = odorsOnIx(2);
             case 2
                 OdorValve = odorsOn(3);
-                softCode = 3;
+                softCode = odorsOnIx(3);
+            case 3
+                OdorValve = odorsOn(4);
+                softCode = odorsOnIx(4);
         end
             
         slaveResponse = updateValveSlave(valveSlave, OdorValve); 

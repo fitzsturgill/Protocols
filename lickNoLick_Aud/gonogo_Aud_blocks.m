@@ -65,7 +65,23 @@ S.LinkToFcn = '';
 blocks{end + 1} = S;
 %% block 5 full task with different sound intensities
 S = struct(); ST = struct();
-ST.BlockNumber = [5; 5; 5; 5; 5; 5; 5; 5]; % fluff
+ST.BlockNumber = [5; 5; 5; 5; 5; 5]; % fluff
+ST.P = [0.18; 0.16; 0.16; 0.18; 0.16; 0.16];
+ST.CS = [1; 1; 1; 2; 2; 2]; % GoTone A and NoGoTone B
+ST.SoundAmplitude = {50; 40; 30; 50; 40; 30};
+ST.CSValence = [1; 1; 1; 1; 1; 1];
+% ST.US = {'Reward'; 'Neutral'};  
+ST.Instrumental = [1; 1; 1; 1; 1; 1];
+% ST.WaterAmount = {5; 0};
+ST.US = {'Reward'; 'Reward'; 'Reward'; 'Punish'; 'Punish'; 'Punish'};
+% noLickOutcome = {'Neutral'; 'Neutral'; 'Neutral'; 'Neutral'; 'Neutral'; 'Neutral'; 'Neutral'; 'Neutral'};
+S.Table = struct2table(ST);
+S.LinkTo = 0;
+S.LinkToFcn = '';
+blocks{end + 1} = S;
+%% block 6 full task with different sound intensities
+S = struct(); ST = struct();
+ST.BlockNumber = [6; 6; 6; 6; 6; 6; 6; 6]; % fluff
 ST.P = [0.125; 0.125; 0.125; 0.125; 0.125; 0.125; 0.125; 0.125];
 ST.CS = [1; 1; 1; 1; 2; 2; 2; 2]; % GoTone A and NoGoTone B
 ST.SoundAmplitude = {50; 40; 30; 20; 50; 40; 30; 20};
