@@ -33,8 +33,9 @@ function FrankenLNL_4odors
 %         'GUI.OutcomeDelay', 1;... % response (lick) to reinforcement delay, (in future may be updated trial-by-trial)
 %         'GUI.Answer', 1;... % answer period duration
 
-        'GUIPanels.Stimuli', {'PunishValveTime', 'Reward', 'UsePulsePal', 'Odor1Valve', 'Odor2Valve', 'Odor3Valve', 'Odor4Valve', 'neutralToneOn'};...
-        'GUI.PunishValveTime', 0.2;... %s        
+        'GUIPanels.Stimuli', {'PunishValveTime', 'Reward', 'UsePulsePal', 'Odor1Valve', 'Odor2Valve', 'Odor3Valve', 'Odor4Valve',...
+        'neutralToneOn', 'outcomeToneOn', 'cueToneOn'};...
+        'GUI.PunishValveTime', 0.2;... %s    
         'GUI.Reward', 8;...
         'GUI.UsePulsePal', 0;...
         'GUI.Odor1Valve', 5;...
@@ -42,7 +43,11 @@ function FrankenLNL_4odors
         'GUI.Odor3Valve', 7;...
         'GUI.Odor4Valve', 8;...
         'GUI.neutralToneOn', 0;...
-        'GUIMeta.neutralToneOn.Style', 'checkbox';...      
+        'GUIMeta.neutralToneOn.Style', 'checkbox';...
+        'GUI.outcomeToneOn', 0;...
+        'GUIMeta.outcomeToneOn.Style', 'checkbox';...        
+        'GUI.cueToneOn', 0;...
+        'GUIMeta.cueToneOn.Style', 'checkbox';...            
 
         'GUIPanels.Blocks', {'BlockFcn', 'PhotometryRasterFcn', 'Block'};...
         'GUI.BlockFcn', 'two_cue_states';...
@@ -119,7 +124,7 @@ function FrankenLNL_4odors
     %% photometry plots
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         updatePhotometryPlot('init');
-        prfh('init', 'baselinePeriod', [1 S.PreCsRecording], 'odorsToPlot', [1 2 3 4])
+        prfh('init', 'baselinePeriod', [1 S.PreCsRecording], 'odorsToPlot', [1 2 3 4 5 -1])
     end
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
@@ -131,21 +136,28 @@ function FrankenLNL_4odors
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
         SF = 192000;
+        attenuation = 100;
 
         % linear ramp of sound for 10ms at onset and offset
-        neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
-        % kludge
-        neutralTone = neutralTone / 100;
+        neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01)/ attenuation; % 10ms taper
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
+           
         
         % white noise for punishment
         wn_duration = 1;
         wn_amplitude = 2;
         whiteNoise = (rand(1, wn_duration * SF) - 0.5) * wn_amplitude;
         PsychToolboxSoundServer('Load', 2, whiteNoise);
-        BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
 
+
+        % cue 1 and 2 tones, (same frequency)
+        c1t = taperedSineWave(SF, 15000, S.GUI.Cue1Time, 0.01)/attenuation ; % 10ms taper 
+        PsychToolboxSoundServer('Load', 3, c1t);
+        c2t = taperedSineWave(SF, 10000, S.GUI.Cue2Time, 0.01)/attenuation ; % 10ms taper
+        PsychToolboxSoundServer('Load', 4, c2t);   
+        
+        BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     %% Generate feedback white noise
         
 
@@ -261,7 +273,7 @@ function FrankenLNL_4odors
 % % %         TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',... % update outcome plot to show trial type of current trial with outcome undefined (NaN)
 % % %             currentTrial, [BpodSystem.Data.TrialTypes TrialType], [BpodSystem.Data.TrialOutcome NaN]);            
         
-        
+        TinyPuffCode1 = 0;
         switch S.Block.Table.CS1(TrialType)
             case 0
                 Odor1Valve = 0; % uncued
@@ -273,8 +285,16 @@ function FrankenLNL_4odors
                 Odor1Valve = S.GUI.Odor3Valve;
             case 4
                 Odor1Valve = S.GUI.Odor4Valve;
+            case 5
+                Odor1Valve = 13; %tinytone
+            case -1
+                Odor1Valve = 0;
+                TinyPuffCode1 = 1;
+            
+                
         end
         
+        TinyPuffCode2 = 0;
         switch S.Block.Table.CS2(TrialType)
             case 0
                 Odor2Valve = 0; % uncued
@@ -286,6 +306,11 @@ function FrankenLNL_4odors
                 Odor2Valve = S.GUI.Odor3Valve;
             case 4
                 Odor2Valve = S.GUI.Odor4Valve;
+            case 5
+                Odor2Valve = 0; %tinytone
+            case -1
+                Odor2Valve = 0;
+                TinyPuffCode2 = 1;
         end
         
         Outcome = S.Block.Table.US{TrialType};
@@ -296,6 +321,20 @@ function FrankenLNL_4odors
         else
             neutralCode = 0;
         end
+        
+        if S.GUI.outcomeToneOn
+            outcomeToneCode = 1;
+        else
+            outcomeToneCode = 0;
+        end
+        
+        if S.GUI.cueToneOn && S.Block.Table.CS2(TrialType)
+            cueToneCode = 1;
+        else 
+            cueToneCode = 0;
+        end
+        
+        
         
         %% update odor valve number for current trial
         if ~BpodSystem.EmulatorMode
@@ -360,7 +399,7 @@ function FrankenLNL_4odors
         sma = AddState(sma, 'Name', 'Cue1', ... 
             'Timer', S.GUI.Cue1Time,...
             'StateChangeConditions', {'Tup','Trace1'},...
-            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg,});
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg, 'ValveState', TinyPuffCode1 * S.PunishValveCode, 'SoftCode', 3 * cueToneCode});
         
         sma = AddState(sma, 'Name','Trace1',...
             'Timer',S.GUI.Trace1Delay,...
@@ -370,7 +409,7 @@ function FrankenLNL_4odors
         sma = AddState(sma, 'Name', 'Cue2', ... 
             'Timer', S.GUI.Cue2Time,...
             'StateChangeConditions', {'Tup','Trace2'},...
-            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});  
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg, 'ValveState', TinyPuffCode2 * S.PunishValveCode, 'SoftCode', 4 * cueToneCode});  
         
         sma = AddState(sma, 'Name','Trace2',...
             'Timer',S.GUI.Trace2Delay,...
@@ -385,12 +424,12 @@ function FrankenLNL_4odors
         sma = AddState(sma,'Name', 'Reward', ... % 4 possible outcome states: Reward (H2O + tone), Punish (air puff + tone), WNoise (white noise), Neutral (tone)
             'Timer', S.RewardValveTime,... %
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', {'ValveState', S.RewardValveCode, 'SoftCode', 1});
+            'OutputActions', {'ValveState', S.RewardValveCode, 'SoftCode', outcomeToneCode});
         
         sma = AddState(sma,'Name', 'Punish', ...
             'Timer', S.GUI.PunishValveTime,... %
             'StateChangeConditions', {'Tup', 'PostUsRecording'},...
-            'OutputActions', {'ValveState', S.PunishValveCode, 'SoftCode', 1});
+            'OutputActions', {'ValveState', S.PunishValveCode, 'SoftCode', outcomeToneCode});
         
         sma = AddState(sma,'Name', 'WNoise', ...
             'Timer', 0,... %
@@ -538,7 +577,7 @@ function FrankenLNL_4odors
                     % Note that switchParameterCriterion not used for
                     % LNL_pRasters_byOdor, but doesn't matter when
                     % supplied via varargin
-                    prfh('Update', 'odorsToPlot', [1 2 3 4], 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
+                    prfh('Update', 'odorsToPlot', [1 2 3 4 5 -1], 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
 %                     if any(blockTransitions) % block transition lines
 %                         if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
 %                             for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
