@@ -48,6 +48,10 @@ function wheel_v1
     
     %% Initialize NIDAQ
     S.nidaq.duration = S.GUI.AcqLength;
+    S.nidaq.IsContinuous = false;
+    S.nidaq.updateInterval = 0.1; % save new data every n seconds
+    
+    
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
     end

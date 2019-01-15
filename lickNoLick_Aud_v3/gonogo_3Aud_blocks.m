@@ -2,30 +2,30 @@ function blocks = gonogo_3Aud_blocks
 
 blocks = {};
 
-%% block 1 direct delivery without airpuff
+%% block 1 initial training
 S = struct(); ST = struct();
-ST.BlockNumber = [1; 1; 1]; % fluff
-ST.P = [0.7; 0.2; 0.1];
-ST.CS = [1; 2; 3]; % GoTone A and NoGoTone B
-ST.SoundAmplitude = [50; 50; 50];
-ST.CSValence = [1; 1; 1];
-ST.US = {'Reward'; 'Punish'; 'Neutral'};  
-ST.Instrumental = [0; 0; 0];
+ST.BlockNumber = [1; 1]; % fluff
+ST.P = [0.8; 0.2];
+ST.CS = [1; 3]; % GoTone A and NeutralTone C
+ST.SoundAmplitude = [50; 50];
+ST.CSValence = [1; 1];
+ST.US = {'Reward'; 'Neutral'};   
+ST.Instrumental = [0; 0];
 % ST.WaterAmount = {5; 0};
 S.Table = struct2table(ST);
 S.LinkTo = 0;
 S.LinkToFcn = '';
 blocks{end + 1} = S;
 
-%% block 2 gonogo without airpuff
+%% block 2 pavlovian
 S = struct(); ST = struct();
-ST.BlockNumber = [2; 2]; % fluff
-ST.P = [0.8; 0.2];
-ST.CS = [1; 2]; % GoTone A and NoGoTone B
-ST.SoundAmplitude = [50; 50];
-ST.CSValence = [1; 1];
-ST.US = {'Reward'; 'Neutral'};   
-ST.Instrumental = [1; 1];
+ST.BlockNumber = [2; 2; 2]; % fluff
+ST.P = [0.7; 0.2; 0.1];
+ST.CS = [1; 2; 3]; % reward cue A, punish cue B and neutral tone
+ST.SoundAmplitude = [50; 50; 50];
+ST.CSValence = [1; 1; 1];
+ST.US = {'Reward'; 'Punish'; 'Neutral'};  
+ST.Instrumental = [0; 0; 0];
 % ST.WaterAmount = {5; 0};
 S.Table = struct2table(ST);
 S.LinkTo = 0;
