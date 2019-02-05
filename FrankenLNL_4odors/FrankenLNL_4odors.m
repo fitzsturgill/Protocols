@@ -3,13 +3,12 @@ function FrankenLNL_4odors
     % Written by Aubrey Siebels and Fitz Sturgill 2018
     global BpodSystem
     
-    %% CS valence is important-   explain here!!!
     
-    TotalRewardDisplay('init')
+    TotalRewardDisplay('init');
     %% Define parameters
     S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
     
-    blockFunctionList = {'two_cue_states', 'punishBlocks'};
+    blockFunctionList = {'two_cue_states', 'punishBlocks', 'rewardPunishBlocks'};
     PhotometryRasterFcnList = {'FrankenLNL_4odors_pRasters'};
     defaults = {...
         'GUIPanels.Photometry', {'LED1_amp', 'LED2_amp', 'LED1_f', 'LED2_f', 'PhotometryOn'};...
@@ -34,7 +33,7 @@ function FrankenLNL_4odors
 %         'GUI.Answer', 1;... % answer period duration
 
         'GUIPanels.Stimuli', {'PunishValveTime', 'Reward', 'UsePulsePal', 'Odor1Valve', 'Odor2Valve', 'Odor3Valve', 'Odor4Valve',...
-        'neutralToneOn', 'outcomeToneOn', 'cueToneOn'};...
+        'neutralToneOn', 'outcomeToneOn'};...
         'GUI.PunishValveTime', 0.2;... %s    
         'GUI.Reward', 4;...
         'GUI.UsePulsePal', 0;...
@@ -45,12 +44,9 @@ function FrankenLNL_4odors
         'GUI.neutralToneOn', 0;...
         'GUIMeta.neutralToneOn.Style', 'checkbox';...
         'GUI.outcomeToneOn', 0;...
-        'GUIMeta.outcomeToneOn.Style', 'checkbox';...        
-        'GUI.cueToneOn', 0;...
-        'GUIMeta.cueToneOn.Style', 'checkbox';...            
-
+        'GUIMeta.outcomeToneOn.Style', 'checkbox';...                 
         'GUIPanels.Blocks', {'BlockFcn', 'PhotometryRasterFcn', 'Block'};...
-        'GUI.BlockFcn', 'two_cue_states';...
+        'GUI.BlockFcn', 'rewardPunishBlocks';...
         'GUIMeta.BlockFcn.Style', 'popupmenutext';...
         'GUIMeta.BlockFcn.String',  blockFunctionList;...
         'GUI.PhotometryRasterFcn', 'FrankenLNL_4odors_pRasters';...
@@ -118,6 +114,7 @@ function FrankenLNL_4odors
     %% Initialize NIDAQ
     S.nidaq.duration = S.PreCsRecording + S.GUI.Cue1Time + S.GUI.Trace1Delay + S.GUI.Cue2Time + S.GUI.Trace2Delay + S.PostUsRecording;
     startX = 0 - S.PreCsRecording; % 0 defined as time from cue (because reward time can be variable depending upon outcomedelay)
+    S.nidaq.IsContinuous = false;
     if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
         S = initPhotometry(S);
     end
@@ -136,7 +133,7 @@ function FrankenLNL_4odors
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
         SF = 192000;
-        attenuation = 100;
+        attenuation = 20;
 
         % linear ramp of sound for 10ms at onset and offset
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01)/ attenuation; % 10ms taper
@@ -152,7 +149,7 @@ function FrankenLNL_4odors
 
 
         % cue 1 and 2 tones, (same frequency)
-        c1t = taperedSineWave(SF, 15000, S.GUI.Cue1Time, 0.01)/attenuation ; % 10ms taper 
+        c1t = taperedSineWave(SF, 10000, S.GUI.Cue1Time, 0.01)/attenuation ; % 10ms taper 
         PsychToolboxSoundServer('Load', 3, c1t);
         c2t = taperedSineWave(SF, 10000, S.GUI.Cue2Time, 0.01)/attenuation ; % 10ms taper
         PsychToolboxSoundServer('Load', 4, c2t);   
@@ -232,8 +229,12 @@ function FrankenLNL_4odors
     BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
     BpodSystem.Data.Odor1Valve = []; % e.g. 1st odor = V5, or V6,
     BpodSystem.Data.Odor2Valve = []; % 
-    BpodSystem.Data.Odor1ValveIndex = []; % 
-    BpodSystem.Data.Odor2ValveIndex = []; % 
+    BpodSystem.Data.Odor1ValveIndex = []; 
+    BpodSystem.Data.Odor2ValveIndex = [];
+    BpodSystem.Data.CS1_tone = []; 
+    BpodSystem.Data.CS2_tone = [];   
+    BpodSystem.Data.CS1_light = []; 
+    BpodSystem.Data.CS2_light = [];       
     BpodSystem.Data.Epoch = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.BlockNumber = [];
     BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
@@ -272,7 +273,6 @@ function FrankenLNL_4odors
         TrialType = pickRandomTrials_blocks(S.Block.Table); % trial type chosen on the fly based upon current Protocol Settings
 % % %         TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',... % update outcome plot to show trial type of current trial with outcome undefined (NaN)
 % % %             currentTrial, [BpodSystem.Data.TrialTypes TrialType], [BpodSystem.Data.TrialOutcome NaN]);            
-        
         TinyPuffCode1 = 0;
         switch S.Block.Table.CS1(TrialType)
             case 0
@@ -313,6 +313,31 @@ function FrankenLNL_4odors
                 TinyPuffCode2 = 1;
         end
         
+        if ismember('CS1_tone', S.Block.Table.Properties.VariableNames) && S.Block.Table.CS1_tone(TrialType);
+            CS1_tone = true;
+        else
+            CS1_tone = false;
+        end
+        
+        if ismember('CS2_tone', S.Block.Table.Properties.VariableNames) && S.Block.Table.CS2_tone(TrialType);
+            CS2_tone = true;
+        else
+            CS2_tone = false;
+        end
+        
+        if ismember('CS1_light', S.Block.Table.Properties.VariableNames) && S.Block.Table.CS1_light(TrialType)
+            CS1_light = S.Block.Table.CS1_light(TrialType);
+        else
+            CS1_light = 0;
+        end
+        
+        if ismember('CS2_light', S.Block.Table.Properties.VariableNames) && S.Block.Table.CS2_light(TrialType)
+            CS2_light = S.Block.Table.CS2_light(TrialType);
+        else
+            CS2_light = 0;
+        end
+            
+        
         Outcome = S.Block.Table.US{TrialType};
         
         
@@ -328,11 +353,6 @@ function FrankenLNL_4odors
             outcomeToneCode = 0;
         end
         
-        if S.GUI.cueToneOn && S.Block.Table.CS2(TrialType)
-            cueToneCode = 1;
-        else 
-            cueToneCode = 0;
-        end
         
         
         
@@ -399,7 +419,8 @@ function FrankenLNL_4odors
         sma = AddState(sma, 'Name', 'Cue1', ... 
             'Timer', S.GUI.Cue1Time,...
             'StateChangeConditions', {'Tup','Trace1'},...
-            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg, 'ValveState', TinyPuffCode1 * S.PunishValveCode, 'SoftCode', 3 * cueToneCode});
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg, 'ValveState', TinyPuffCode1 * S.PunishValveCode,...
+            'SoftCode', 3 * CS1_tone, 'PWM1', CS1_light});
         
         sma = AddState(sma, 'Name','Trace1',...
             'Timer',S.GUI.Trace1Delay,...
@@ -409,7 +430,8 @@ function FrankenLNL_4odors
         sma = AddState(sma, 'Name', 'Cue2', ... 
             'Timer', S.GUI.Cue2Time,...
             'StateChangeConditions', {'Tup','Trace2'},...
-            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg, 'ValveState', TinyPuffCode2 * S.PunishValveCode, 'SoftCode', 4 * cueToneCode});  
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg, 'ValveState', TinyPuffCode2 * S.PunishValveCode,...
+            'SoftCode', 4 * CS2_tone, 'PWM1', CS2_light});  
         
         sma = AddState(sma, 'Name','Trace2',...
             'Timer',S.GUI.Trace2Delay,...
@@ -533,8 +555,10 @@ function FrankenLNL_4odors
             BpodSystem.Data.Odor2Valve(end + 1) =  Odor2Valve;
             BpodSystem.Data.Odor1ValveIndex(end + 1) = S.Block.Table.CS1(TrialType);
             BpodSystem.Data.Odor2ValveIndex(end + 1) = S.Block.Table.CS2(TrialType);
-% % %             BpodSystem.Data.CSValence(end + 1) = S.Block.Table.CSValence(TrialType);% 1 = CS+, 0 = CS-
-% % %             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
+            BpodSystem.Data.CS1_tone(end + 1) = CS1_tone;
+            BpodSystem.Data.CS2_tone(end + 1) = CS2_tone;
+            BpodSystem.Data.CS1_light(end + 1) = CS1_light;
+            BpodSystem.Data.CS2_light(end + 1) = CS2_light;                     
             BpodSystem.Data.ReinforcementOutcome{end + 1} = Outcome; % i.e. 1: reward, 2: neutral, 3: punish
             BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
 % % %             BpodSystem.Data.LickAction{end + 1} = lickAction;
@@ -542,9 +566,9 @@ function FrankenLNL_4odors
             %% update outcome plot to reflect upcoming trial
 % % %             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
 % % %                 currentTrial, BpodSystem.Data.TrialTypes, BpodSystem.Data.TrialOutcome);            
-% % %             if strcmpi(ReinforcementOutcome, 'reward')
-% % %                 TotalRewardDisplay('add', S.GUI.Reward);
-% % %             end
+            if strcmpi(Outcome, 'Reward')
+                TotalRewardDisplay('add', S.GUI.Reward);
+            end
             
             %% adaptive block transitions
 % %             if S.Block.LinkTo
