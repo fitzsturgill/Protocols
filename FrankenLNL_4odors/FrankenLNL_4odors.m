@@ -8,25 +8,6 @@ function FrankenLNL_4odors
     %% Define parameters
     S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
     
-%     TaskParameters.GUI.StimFreq.Freq = [10, 10, 10, 40, 80]';
-%     TaskParameters.GUI.StimFreq.Active = [1 1 1 0 0]';
-%     TaskParameters.GUI.StimFreq.Amplitude = [2 2.5 3 1 1]';
-%     TaskParameters.GUIMeta.StimFreq.Style = 'table';
-%     TaskParameters.GUIMeta.StimFreq.String = 'Stim Freq';
-% 
-%     %% determine which aux channels are being acquired, use table GUI element for this
-%     nidaq.auxChannelsOn = [];
-%     nidaq.auxDownsample = []; % downsampled rates for each channel
-%     nidaq.auxChannelNames = {}; % to be used in future
-%     nidaq.auxChannelNumbers = []; % which AI port on NI breakout board (e.g. 3 for AI3)
-%     
-%     if isfield(S.GUI, 'aux')
-%         nidaq.auxChannelsOn = find(S.GUI.aux.active);
-%         nidaq.auxDownsample = S.GUI.aux.downsample(nidaq.auxChannelsOn);
-%         nidaq.auxChannelNames = S.GUI.aux.auxChannelNames(nidaq.auxChannelsOn);
-%         nidaq.auxChannelNumbers = S.GUI.aux.auxChannelNumbers(nidaq.auxChannelsOn);
-%     end    
-    
     
     blockFunctionList = {'two_cue_states', 'punishBlocks', 'rewardPunishBlocks'};
     PhotometryRasterFcnList = {'FrankenLNL_4odors_pRasters'};
@@ -39,12 +20,11 @@ function FrankenLNL_4odors
         'GUI.PhotometryOn', 1;...
         
         'GUIPanels.Aux', {'Aux'};...
-        'GUI.Aux.auxChannelsOn', false(4,1);...
-        'GUI.Aux.auxChannelNumbers', [2; 3; 4; 5];...
-        'GUI.Aux.auxChannelNames', {'AI2'; 'AI3'; 'AI4'; 'AI5'};...
-        'GUI.Aux.auxDownsample', [20; 20; 20; 20];...
+        'GUI.Aux.channelsOn', [true; false; false; false];...
+        'GUI.Aux.channelNumbers', [2; 3; 4; 5];...
+        'GUI.Aux.downsample', [20; 20; 20; 20];...
         'GUIMeta.Aux.Style', 'table';...
-        'GUIMeta.Aux.String', 'Aux. Inputs';...
+        'GUIMeta.Aux.String', '';...
         
         'GUIPanels.Timing', {'ITI', 'mu_iti', 'Trace1Delay', 'Trace2Delay', 'Cue1Time', 'Cue2Time'};...
         'GUI.ITI', 0;... % reserved for future use
@@ -88,35 +68,14 @@ function FrankenLNL_4odors
         'GUITabs.Stimuli', {'Stimuli'};...
         'GUITabs.Blocks', {'Blocks'};...
         'GUITabs.Aux', {'Aux'};...
-%         'GUI.Hit_RewardFraction', 0.7;...
-%         'GUI.FA_RewardFraction', 0.3;...
-%         'GUI.Hit_PunishFraction', 0;...
-%         'GUI.FA_PunishFraction', 0;...
-        
-        
-        % parameters for adaptive reversals 
-
-        % common across LinkTo functions
-%         'reversalCriterion', [];... % criterion for reversal, plotted online
-        
-        % number correct dictates reversal, LinkToFcn =
-        % blockSwitchFunction_nCorrect
-%         'SwFcn_nC_MinCorrect', 10;... 
-%         'SwFcn_nC_MeanAdditionalCorrect', 10;...
-%         'SwFcn_nC_MaxAdditionalCorrect', 20;...
-        
-        % response rate difference dictates reversal, LinkToFcn =
-        % blockSwitchFunction_responseRateDifference
-%         'SwFcn_BlockRRD_minDiff', 0.5;...
-%         'SwFcn_BlockRRD_minTrials', 20;...
-        
-   
         'PreCsRecording', 4;...
         'PostUsRecording', 4;...
         'currentValve', [];... % holds odor valve # for current trial
         'RewardValveCode', 1;...
         'PunishValveCode', 2;...
         'RewardValveTime', [];...
+        'ShockResistor', 10e3;... %10KOhm resistor
+        'ShockUnits', 1e-6;...  % microAmperes
         };
     
     S = setBpodDefaultSettings(S, defaults);
@@ -153,6 +112,15 @@ function FrankenLNL_4odors
         updatePhotometryPlot('init');
         prfh('init', 'baselinePeriod', [1 S.PreCsRecording], 'odorsToPlot', [1 2 3 4 5 -1])
     end
+    
+    %% monitor shock current, assumes aux channel 2 is activated and downsampled to 20Hz
+    if ~BpodSystem.EmulatorMode
+        shockFig.h = ensureFigure('ShockCurrent', 1);
+        shockFig.trialAxis = subplot(2,1,1); hold on; xlabel('time (s)'); ylabel('input voltage');
+        shockFig.trialLine = scatter([],[],'MarkerFaceColor', 'flat'); colormap jet;
+        shockFig.sessionAxis = subplot(2,1,2); xlabel('trial #'); ylabel('Ishock uAmps'); hold on;
+        shockFig.sessionLine = scatter([],[],'MarkerFaceColor', 'flat'); colormap jet;
+    end
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
     BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 4, 1); title('Odor 1');
@@ -185,25 +153,7 @@ function FrankenLNL_4odors
         PsychToolboxSoundServer('Load', 4, c2t);   
         
         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
-    %% Generate feedback white noise
-        
 
-%         load('PulsePalParamFeedback.mat');
-%         if S.GUI.UsePulsePal
-%             soundArg = bitset(0, 2); % kludge to get pulse pal to work on top rig but not disrupt bottom rig
-%             try
-%                 ProgramPulsePal(PulsePalParamFeedback);        
-%             catch % if you're a dolt and forgot to start pulse pal
-%                 PulsePal;
-%                 ProgramPulsePal(PulsePalParamFeedback);        
-%             end
-%                 maxLineLevel = 1; % e.g. +/- 1V command signal to an amplified speaker
-%                 nPulses = 1000;
-%                 SendCustomWaveform(1, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %
-%                 SendCustomWaveform(2, 0.0001, (rand(1,nPulses)-.5)*maxLineLevel * 2); %        
-%         else
-%             soundArg = 0;
-%         end
 
     
         %% Initialize olfactometer and point grey camera
@@ -273,28 +223,8 @@ function FrankenLNL_4odors
     BpodSystem.Data.SwitchParameterCriterion = [];
     BpodSystem.Data.AnswerLicks = struct('count', [], 'rate', [], 'duration', []); % number of licks during answer period, nTrials x 1
     BpodSystem.Data.AnswerLicksROC = struct('auROC', [], 'pVal', [], 'CI', []); 
-% % %     Outcome = '';
-% % %     lickAction = '';
-    %% Outcome Plot
-% % %     trialsToShow = 50;
-% % %     TrialTypes = [];
-% % %     TrialOutcomes = [];
-% % %     BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none');
-% % %     BpodSystem.GUIHandles.OutcomePlot = axes;
-% % %     TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'init', BpodSystem.Data.TrialTypes);%, 'ntrials', trialsToShow);
-    
-    %% testing auROC plotting
-%     BpodSystem.ProtocolFigures.auROC.fig = ensureFigure('auROC_plot', 1); % still a kludge, assumes that I'm using correct block switch funtion currently... (4/2018)
-%     BpodSystem.ProtocolFigures.auROC.ax = subplot(2,1,1, 'NextPlot', 'add');
-%     BpodSystem.ProtocolFigures.auROC.sh = scatter([], [], 20, [], 'Parent', BpodSystem.ProtocolFigures.auROC.ax); 
-%     ylabel('auROC');
-%     BpodSystem.ProtocolFigures.auROC.ax2 = subplot(2,1,2, 'NextPlot', 'add'); % plot switchParameter
-%     BpodSystem.ProtocolFigures.auROC.clh = line(0,0, 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'g');
-%     BpodSystem.ProtocolFigures.auROC.splh = line(0,0, 'Parent', BpodSystem.ProtocolFigures.auROC.ax2, 'Color', 'k');
-%     ylabel('Fraction significant'); xlabel('trial number');
-    
-% % %     Outcome = '';
-% % %     lickAction = '';
+    BpodSystem.Data.ShockCurrent = [];
+
     
     %% Main trial loop
     for currentTrial = 1:MaxTrials
@@ -416,7 +346,6 @@ function FrankenLNL_4odors
         
        %% Assemble state matrix
         sma = NewStateMatrix(); 
-%         sma = SetGlobalTimer(sma,1,S.GUI.Answer); % post cue   
         sma = SetGlobalTimer(sma,1,S.nidaq.duration); % photometry acq duration
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0,...
@@ -427,16 +356,7 @@ function FrankenLNL_4odors
             'Timer', S.GUI.ITI,...
             'StateChangeConditions', {'Tup', 'StartRecording'},...
             'OutputActions', {}); 
-        
-%         sma = AddState(sma,'Name', 'NoLick', ...
-%             'Timer', S.GUI.NoLick,...
-%             'StateChangeConditions', {'Tup', 'StartRecording','Port1In','RestartNoLick'},...
-%             'OutputActions', {'WireState', bitset(0, 2)}); % Pulse Pal sound on
-%         
-%         sma = AddState(sma,'Name', 'RestartNoLick', ...
-%             'Timer', 0,...
-%             'StateChangeConditions', {'Tup', 'NoLick'},...
-%             'OutputActions', {}); %
+
         
         sma = AddState(sma, 'Name', 'StartRecording',...
             'Timer',0.025,...
@@ -526,13 +446,13 @@ function FrankenLNL_4odors
                 try % this shouldn't fail, just assigning to a cell array
                     processPhotometryAcq(currentTrial);
                 catch
-                    disp('*** Problem with saving, this should not happen ***');
+                    warning('*** Problem with saving, this should not happen ***');
                 end
                 try % in case photometry hicupped
                 %% online plotting
                     processPhotometryOnline(currentTrial);
                     updatePhotometryPlot('update', startX);  
-                    xlabel('Time from cue (s)');
+%                     xlabel('Time from cue (s)');
                 catch
                     disp('*** Problem with online photometry processing ***');
                 end
@@ -541,51 +461,7 @@ function FrankenLNL_4odors
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)        
             
-%             %TrialOutcome -> NaN: future trial or omission, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
-%             if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
-%                 lickAction = 'lick';
-%                 ReinforcementOutcome = Outcome;               
-%                 if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
-%                     TrialOutcome = 1; % hit
-%                 if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
-%                      TrialOutcome = -1; % miss
-%                 if S.Block.Table.CSValence(TrialType) == -1
-%                      TrialOutcome = 2; % correct rejection
-%                 elseif S.Block.Table.CSValence(TrialType) == -1
-%                     TrialOutcome = 0; % false alarm
-%                 else
-%                     TrialOutcome = NaN; % uncued
-%                 end
-%                 end
-%                 end
-%             end
-% % %             else
-% % %                 lickAction = 'nolick';
-% % %                 ReinforcementOutcome = Outcome;
-% % %                 if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
-% % %                     TrialOutcome = -1; % miss
-% % %                 elseif S.Block.Table.CSValence(TrialType) == -1
-% % %                     TrialOutcome = 2; % correct rejection
-% % %                 else
-% % %                     TrialOutcome = NaN; % uncued
-% % %                 end                
-% % %             end
-            
-            % computer number of answer licks
-% % %             answerWindow = [...
-% % %                 BpodSystem.Data.RawEvents.Trial{currentTrial}.States.AnswerStart(1)... % start of answer
-% % %                 max(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Outcome(end), BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Outcome(end))... % end of answer
-% % %                 ];            
-% % %             
-% % %             if isfield(BpodSystem.Data.RawEvents.Trial{currentTrial}.Events, 'Port1In')
-% % %                 BpodSystem.Data.AnswerLicks.count(end + 1) = sum((answerWindow(1) <= BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In) & (BpodSystem.Data.RawEvents.Trial{currentTrial}.Events.Port1In < answerWindow(2)));
-% % %             else
-% % %                 BpodSystem.Data.AnswerLicks.count(end + 1) = 0;
-% % %             end
-% % % 
-% % %             BpodSystem.Data.AnswerLicks.duration(end + 1) = diff(answerWindow);
-% % %             BpodSystem.Data.AnswerLicks.rate(end + 1) = BpodSystem.Data.AnswerLicks.count(end) / BpodSystem.Data.AnswerLicks.duration(end);
-% % % 
+
             BpodSystem.Data.TrialTypes(end + 1) = TrialType; % Adds the trial type of the current trial to data
 % % %             BpodSystem.Data.TrialOutcome(end + 1) = TrialOutcome;            
             BpodSystem.Data.Odor1Valve(end + 1) =  Odor1Valve;
@@ -598,7 +474,7 @@ function FrankenLNL_4odors
             BpodSystem.Data.CS2_light(end + 1) = CS2_light;                     
             BpodSystem.Data.ReinforcementOutcome{end + 1} = Outcome; % i.e. 1: reward, 2: neutral, 3: punish
             BpodSystem.Data.BlockNumber(end + 1) = S.GUI.Block;
-% % %             BpodSystem.Data.LickAction{end + 1} = lickAction;
+
 
             %% update outcome plot to reflect upcoming trial
 % % %             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
@@ -607,71 +483,47 @@ function FrankenLNL_4odors
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
             
-            %% adaptive block transitions
-% %             if S.Block.LinkTo
-% %                 switchFcn = str2func(S.Block.LinkToFcn);
-% %                 [S.GUI.Block, switchParameter, switchParameterCriterion] = switchFcn(BpodSystem.Data.TrialOutcome, BpodSystem.Data.BlockNumber, S);
-% %                 S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
-% %             else
-% %                 switchParameter = NaN;
-% %                 switchParameterCriterion = NaN;
-% %             end
-% %             BpodSystem.Data.SwitchParameter(end + 1) = switchParameter(1);
-% %             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
 
-% % %             % testing auROC plotting
-% % %             set(BpodSystem.ProtocolFigures.auROC.sh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.AnswerLicksROC.auROC, 'CData', BpodSystem.Data.AnswerLicksROC.pVal);
-% % %             set(BpodSystem.ProtocolFigures.auROC.splh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.SwitchParameter);
-% % %             set(BpodSystem.ProtocolFigures.auROC.clh, 'XData', [1 currentTrial], 'YData', [switchParameterCriterion switchParameterCriterion]);
-% % %             set(BpodSystem.ProtocolFigures.auROC.ax2, 'YLim', [0 1]);
+            if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
+                % Note that switchParameterCriterion not used for
+                % LNL_pRasters_byOdor, but doesn't matter when
+                % supplied via varargin
+                prfh('Update', 'odorsToPlot', [1 2 3 4 5 -1], 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
+            end
+
             
-            %% block transition lines
-% % %             blockTransitions = find(diff(BpodSystem.Data.BlockNumber));
-% % %             if any(blockTransitions)
-% % %                 btx = repmat([startX; startX + S.nidaq.duration], 1, length(blockTransitions));
-% % %                 btx2 = repmat([-S.nidaq.duration; S.nidaq.duration], 1, length(blockTransitions));
-% % %                 bty = [blockTransitions; blockTransitions;];
-% % %             end
-% % %             %% update photometry rasters
-%             try % in case photometry hicupped
-                if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode    
-                    % Note that switchParameterCriterion not used for
-                    % LNL_pRasters_byOdor, but doesn't matter when
-                    % supplied via varargin
-                    prfh('Update', 'odorsToPlot', [1 2 3 4 5 -1], 'XLim', [-S.nidaq.duration, S.nidaq.duration]);
-%                     if any(blockTransitions) % block transition lines
-%                         if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch1)
-%                             for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch1(2:end)
-%                                 plot(btx2, bty, '-r', 'Parent', ah);
-%                             end
-%                         end
-%                         if ~isempty(BpodSystem.ProtocolFigures.phRaster.ax_ch2)
-%                             for ah = BpodSystem.ProtocolFigures.phRaster.ax_ch2(2:end)
-%                                 plot(btx2, bty, '-r', 'Parent', ah);
-%                             end
-%                         end
-%                     end
-                end
-%             end
-            
-            %% lick rasters by odor   
+            %% lick rasters by odor and shock graph
 %             bpLickRaster2(SessionData, filtArg, zeroField, figName, ax)
-            bpLickRaster2({'Odor2ValveIndex', 1}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'session'); hold on;
-            bpLickRaster2({'Odor2ValveIndex', 2}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
-            bpLickRaster2({'Odor2ValveIndex', 3}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor   
-            bpLickRaster2({'Odor2ValveIndex', 4}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor4, 'session'); hold on;
-% % %             if any(blockTransitions)
-% % %                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor1);
-% % %                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxOdor2); % just make 
-% % %                 drawnow;
-% % %             end             
-            set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2 BpodSystem.ProtocolFigures.lickRaster.AxOdor3 BpodSystem.ProtocolFigures.lickRaster.AxOdor4], 'XLim', [startX, startX + S.nidaq.duration]);
-            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'Time from cue (s)');
-            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'Time from cue (s)');
-            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'Time from cue (s)');
-            xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor4, 'Time from cue (s)');
-            
-            
+            if ~BpodSystem.EmulatorMode  
+                bpLickRaster2({'Odor2ValveIndex', 1}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'session'); hold on;
+                bpLickRaster2({'Odor2ValveIndex', 2}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
+                bpLickRaster2({'Odor2ValveIndex', 3}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor   
+                bpLickRaster2({'Odor2ValveIndex', 4}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor4, 'session'); hold on;
+
+                set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2 BpodSystem.ProtocolFigures.lickRaster.AxOdor3 BpodSystem.ProtocolFigures.lickRaster.AxOdor4], 'XLim', [startX, startX + S.nidaq.duration]);
+                xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'Time from cue (s)');
+                xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'Time from cue (s)');
+                xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'Time from cue (s)');
+                xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor4, 'Time from cue (s)');
+                
+                shockWindow = BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Shock - BpodSystem.Data.RawEvents.Trial{currentTrial}.States.StartRecording(1);
+                if all(isfinite(shockWindow))
+                    shockWindowIx = [bpX2pnt(shockWindow(1),20,0) bpX2pnt(shockWindow(2),20,0)];
+                    BpodSystem.Data.ShockCurrent(end + 1) = median(BpodSystem.Data.AuxData{currentTrial, 2}(shockWindowIx(1):shockWindowIx(2))) / S.ShockResistor /S.ShockUnits;
+                    nPoints = numel(BpodSystem.Data.AuxData{currentTrial, 2});
+                    shockXData = (0:nPoints-1) ./ 20;
+                    shockYData = BpodSystem.Data.AuxData{currentTrial, 2};
+                    shockCData = zeros(size(shockXData));
+                    shockCData(shockWindowIx(1):shockWindowIx(2)) = 1;
+                else
+                    BpodSystem.Data.ShockCurrent(end + 1) = NaN;
+                    shockXData = [];
+                    shockYData = [];
+                    shockCData = [];
+                end
+                set(shockFig.sessionLine, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.ShockCurrent);
+                set(shockFig.trialLine, 'XData', shockXData, 'YData', shockYData, 'CData', shockCData, 'SizeData', 10);
+            end
             
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file

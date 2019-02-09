@@ -66,7 +66,7 @@ function FrankenLNL_4odors_pRasters(Op, varargin)
                 thisOdorTrials = onlineFilterTrials_v2('Odor2ValveIndex', thisOdorIndex); % miss or false alarm   
                 rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
                 neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
-                punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
+                punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise','Shock'});                
                 if sum(channelsOn == 1)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
                     nSamples = size(channelData, 2);
