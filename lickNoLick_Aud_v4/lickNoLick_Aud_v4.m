@@ -1,4 +1,4 @@
-function lickNoLick_Aud_v3
+function lickNoLick_Aud_v4
 
     global BpodSystem
     
@@ -35,11 +35,12 @@ function lickNoLick_Aud_v3
         'GUI.GausFeedbackDelayOn', 0;...        
         'GUIMeta.GausFeedbackDelayOn.Style', 'checkbox';... 
               
-        'GUIPanels.Stimuli', {'UsePulsePal', 'MeanSoundFreq1', 'MeanSoundFreq2', 'MeanSoundFreq3', 'SoundAmplitude', 'Reward', 'PunishValveTime', 'PunishSoundOn', 'PunishSoundAmplitude', 'WhiteNoiseOn', 'WhiteNoiseAmplitude'};... %'neutralToneOn', 'TsToneOn'};...
+        'GUIPanels.Stimuli', {'UsePulsePal', 'MeanSoundFreq1', 'MeanSoundFreq2', 'MeanSoundFreq3', 'MeanSoundFreq4', 'SoundAmplitude', 'Reward', 'PunishValveTime', 'PunishSoundOn', 'PunishSoundAmplitude', 'WhiteNoiseOn', 'WhiteNoiseAmplitude'};... %'neutralToneOn', 'TsToneOn'};...
         'GUI.UsePulsePal', 0;...         
-        'GUI.MeanSoundFreq1', 20000;... % Hz; Go A 
-        'GUI.MeanSoundFreq2', 4000;... % Nogo B 
-        'GUI.MeanSoundFreq3', 10000;... % Neutral tone C 
+        'GUI.MeanSoundFreq1', 20000;... % Hz; high value A 
+        'GUI.MeanSoundFreq2', 4000;... % low value B 
+        'GUI.MeanSoundFreq3', 8000;... % punish tone C 
+        'GUI.MeanSoundFreq4', 15000;... % Neutral tone D 
         'GUI.SoundAmplitude', 50;...  % sound amplitude in db
         'GUI.Reward', 8;...
         'GUI.PunishValveTime', 0.2;... %s  
@@ -124,9 +125,10 @@ function lickNoLick_Aud_v3
 
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
-    BpodSystem.ProtocolFigures.lickRaster.AxSound1 = subplot(1, 3, 1); title('Sound 1');
-    BpodSystem.ProtocolFigures.lickRaster.AxSound2 = subplot(1, 3, 2); title('Sound 2');
-    BpodSystem.ProtocolFigures.lickRaster.AxSound3 = subplot(1, 3, 3); title('Sound 3');
+    BpodSystem.ProtocolFigures.lickRaster.AxSound1 = subplot(1, 4, 1); title('Sound 1');
+    BpodSystem.ProtocolFigures.lickRaster.AxSound2 = subplot(1, 4, 2); title('Sound 2');
+    BpodSystem.ProtocolFigures.lickRaster.AxSound3 = subplot(1, 4, 3); title('Sound 3');
+%     BpodSystem.ProtocolFigures.lickRaster.AxSound3 = subplot(1, 4, 4); title('Sound 4');
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
           PsychToolboxSoundServer('init')
@@ -260,6 +262,8 @@ function lickNoLick_Aud_v3
                 SoundValve = 2;
             case 3
                 SoundValve = 3;
+            case 4
+                SoundValve = 4;
         end
         
         S.Sound = S.Block.Table.CS(TrialType);
@@ -274,6 +278,7 @@ function lickNoLick_Aud_v3
         Sound1 = SoundGenerator_SL(S.SoundSamplingRate, S.GUI.MeanSoundFreq1, S.SoundDuration, SoundAmplitude);
         Sound2 = SoundGenerator_SL(S.SoundSamplingRate, S.GUI.MeanSoundFreq2, S.SoundDuration, SoundAmplitude);
         Sound3 = SoundGenerator_SL(S.SoundSamplingRate, S.GUI.MeanSoundFreq3, S.SoundDuration, SoundAmplitude);
+        Sound4 = SoundGenerator_SL(S.SoundSamplingRate, S.GUI.MeanSoundFreq4, S.SoundDuration, SoundAmplitude);
         
         % white noise 
 
@@ -286,23 +291,26 @@ function lickNoLick_Aud_v3
             Sound1 =  Sound1 + WhiteNoise;
             Sound2 =  Sound2 + WhiteNoise;
             Sound3 =  Sound3 + WhiteNoise;
+            Sound4 =  Sound3 + WhiteNoise;
         else
             Sound1 =  Sound1;
             Sound2 =  Sound2;
             Sound3 =  Sound3;
+            Sound4 =  Sound4;
         end
         
         PsychToolboxSoundServer('Load', 1, Sound1);
         PsychToolboxSoundServer('Load', 2, Sound2); 
         PsychToolboxSoundServer('Load', 3, Sound3);
+        PsychToolboxSoundServer('Load', 4, Sound4);
         
         % punish sound 
         samplenum=round(S.SoundSamplingRate * S.NoiseDuration);
         noise2 = 2 * rand(1, samplenum) - 1;%make uniform noise -1 to 1
         PunishSound = NoiseGenerator_SL(noise2, S.SoundSamplingRate, S.Ramp, S.NoiseMinFreq, S.NoiseMaxFreq, S.GUI.PunishSoundAmplitude);
-        PsychToolboxSoundServer('Load', 4, PunishSound);
+        PsychToolboxSoundServer('Load', 5, PunishSound);
         if S.GUI.PunishSoundOn
-            PunishSoundCode = 4;
+            PunishSoundCode = 5;
         else
             PunishSoundCode = 0;
         end
@@ -318,7 +326,7 @@ function lickNoLick_Aud_v3
                      
        %test whether WaterAmount column exist in Block Table 
         if  ismember('WaterAmount', S.Block.Table.Properties.VariableNames)
-            WaterAmount = S.Block.Table.WaterAmount{TrialType};      
+            WaterAmount = S.Block.Table.WaterAmount(TrialType);      
             S.GUI.Reward = WaterAmount;
             S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
         else
@@ -609,7 +617,7 @@ function lickNoLick_Aud_v3
             %% update outcome plot to reflect upcoming trial
             TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',...
                 currentTrial, BpodSystem.Data.TrialTypes, BpodSystem.Data.TrialOutcome);            
-            if strcmpi(ReinforcementOutcome, 'reward')
+            if strcmpi(ReinforcementOutcome, 'reward') && ~any(isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.PostUsRecording))
                 TotalRewardDisplay('add', S.GUI.Reward);
             end
             
@@ -659,18 +667,19 @@ function lickNoLick_Aud_v3
             bpLickRaster2({'SoundValveIndex', 1}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxSound1, 'session'); hold on;
             bpLickRaster2({'SoundValveIndex', 2}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxSound2, 'session'); hold on; % make both rasters regardless of number of Sounds, it'll just be blank if you don't have that Sound
             bpLickRaster2({'SoundValveIndex', 3}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxSound3, 'session'); hold on;     
-
+%             bpLickRaster2({'SoundValveIndex', 4}, 'Cue', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxSound4, 'session'); hold on;  
             if any(blockTransitions)
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxSound1);
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxSound2); 
                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxSound3);
+%                 plot(btx, bty, '-r', 'Parent', BpodSystem.ProtocolFigures.lickRaster.AxSound4);
                 drawnow;
             end             
             set([BpodSystem.ProtocolFigures.lickRaster.AxSound1 BpodSystem.ProtocolFigures.lickRaster.AxSound2 BpodSystem.ProtocolFigures.lickRaster.AxSound3], 'XLim', [startX, startX + S.nidaq.duration]);
             xlabel(BpodSystem.ProtocolFigures.lickRaster.AxSound1, 'Time from cue (s)');
             xlabel(BpodSystem.ProtocolFigures.lickRaster.AxSound2, 'Time from cue (s)');
             xlabel(BpodSystem.ProtocolFigures.lickRaster.AxSound3, 'Time from cue (s)');
-
+%             xlabel(BpodSystem.ProtocolFigures.lickRaster.AxSound4, 'Time from cue (s)');
             
             
             
