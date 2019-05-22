@@ -43,7 +43,7 @@ function FrankenLNL_4odors
         'GUIPanels.Stimuli', {'PunishValveTime', 'Reward', 'UsePulsePal', 'Odor1Valve', 'Odor2Valve', 'Odor3Valve', 'Odor4Valve',...
         'neutralToneOn', 'outcomeToneOn', 'ShockTime'};...
         'GUI.PunishValveTime', 0.2;... %s    
-        'GUI.Reward', 4;...
+        'GUI.Reward', 8;...
         'GUI.UsePulsePal', 0;...
         'GUI.Odor1Valve', 5;...
         'GUI.Odor2Valve', 6;...
@@ -90,7 +90,7 @@ function FrankenLNL_4odors
     BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
     SaveBpodProtocolSettings;
 
-    S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+
     %% Load Tables
     bfh = str2func(S.GUI.BlockFcn);
 %     try
@@ -237,6 +237,8 @@ function FrankenLNL_4odors
         TrialType = pickRandomTrials_blocks(S.Block.Table); % trial type chosen on the fly based upon current Protocol Settings
 % % %         TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot, 'update',... % update outcome plot to show trial type of current trial with outcome undefined (NaN)
 % % %             currentTrial, [BpodSystem.Data.TrialTypes TrialType], [BpodSystem.Data.TrialOutcome NaN]);            
+        S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+
         TinyPuffCode1 = 0;
         switch S.Block.Table.CS1(TrialType)
             case 0
@@ -277,6 +279,7 @@ function FrankenLNL_4odors
                 TinyPuffCode2 = 1;
         end
         
+
         if ismember('CS1_tone', S.Block.Table.Properties.VariableNames) && S.Block.Table.CS1_tone(TrialType);
             CS1_tone = true;
         else
@@ -304,6 +307,11 @@ function FrankenLNL_4odors
         
         Outcome = S.Block.Table.US{TrialType};
         
+        if ismember('RewardSize', S.Block.Table.Properties.VariableNames) && strcmp(Outcome, 'Reward')
+            S.GUI.Reward = S.Block.Table.RewardSize(TrialType);                       
+        end
+        S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.RewardValveCode);
+
         
         if S.GUI.neutralToneOn
             neutralCode = 1;
