@@ -229,3 +229,27 @@ S.LinkTo = 0;
 S.LinkToFcn = '';
 
 blocks{end + 1} = S;
+
+
+%% block 10, varied reward size, uncued
+S = struct(); ST = struct();
+ST.BlockNumber = repmat(10, 4, 1); % fluff
+ST.P = [...
+    0.25;...
+    0.25;...
+    0.25;...
+    0.25;...
+    ];
+ST.CS1 = [0; 0; 0; 0;]; % will be used to select S.GUI.Odor1Valve
+ST.CS2 = [0; 0; 0; 0;]; % will be used to select S.GUI.Odor2Valve
+ST.CS1_tone = [0; 0; 0; 0;];
+ST.CS2_tone = [0; 0; 0; 0;];
+ST.CS1_light = [0; 0; 0; 0;];
+ST.CS2_light = [0; 0; 0; 0;];
+ST.US = {'Reward'; 'Reward'; 'Reward'; 'Neutral';};   % is it Rewarded ?
+ST.RewardSize = [10; 5; 2; 0;];
+S.Table = struct2table(ST);
+S.LinkTo = 0;
+S.LinkToFcn = '';
+
+blocks{end + 1} = S;

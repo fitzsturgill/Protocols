@@ -33,7 +33,7 @@ function habituation_headFixed
         S.GUI.Reward = 5;
         S.GUI.RewardValveCode = 1;
         S.GUI.mu_iti = 3;% 6; % approximate mean iti duration
-        S.GUI.maxTrials = 300;
+        S.GUI.maxTrials = 200;
         S.RewardValveTime = [];
         S.ITI = [];
     end

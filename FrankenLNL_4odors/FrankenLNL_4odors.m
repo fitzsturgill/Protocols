@@ -10,7 +10,7 @@ function FrankenLNL_4odors
     
     
     blockFunctionList = {'two_cue_states', 'punishBlocks', 'rewardPunishBlocks'};
-    PhotometryRasterFcnList = {'FrankenLNL_4odors_pRasters'};
+    PhotometryRasterFcnList = {'FrankenLNL_4odors_pRasters', 'LNL_pRasters_byTrialType'};
     defaults = {...
         'GUIPanels.Photometry', {'LED1_amp', 'LED2_amp', 'LED1_f', 'LED2_f', 'PhotometryOn'};...
         'GUI.LED1_amp', 2.5;...
@@ -125,10 +125,11 @@ function FrankenLNL_4odors
     end
     %% lick rasters for cs1 and cs2
     BpodSystem.ProtocolFigures.lickRaster.fig = ensureFigure('lick_raster', 1);        
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 4, 1); title('Odor 1');
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 4, 2); title('Odor 2');
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor3 = subplot(1, 4, 3); title('Odor 3');
-    BpodSystem.ProtocolFigures.lickRaster.AxOdor4 = subplot(1, 4, 4); title('Odor 4');
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor1 = subplot(1, 5, 1); title('Odor 1');
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor2 = subplot(1, 5, 2); title('Odor 2');
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor3 = subplot(1, 5, 3); title('Odor 3');
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor4 = subplot(1, 5, 4); title('Odor 4');
+    BpodSystem.ProtocolFigures.lickRaster.AxOdor0 = subplot(1, 5, 5); title('Odor 0');
 
     %% Initialize Sound Stimuli
     if ~BpodSystem.EmulatorMode
@@ -509,12 +510,13 @@ function FrankenLNL_4odors
                 bpLickRaster2({'Odor2ValveIndex', 2}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor
                 bpLickRaster2({'Odor2ValveIndex', 3}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'session'); hold on; % make both rasters regardless of number of odors, it'll just be blank if you don't have that odor   
                 bpLickRaster2({'Odor2ValveIndex', 4}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor4, 'session'); hold on;
+                bpLickRaster2({'Odor2ValveIndex', 0}, 'Cue2', 'lick_raster', BpodSystem.ProtocolFigures.lickRaster.AxOdor0, 'session'); hold on;
 
                 set([BpodSystem.ProtocolFigures.lickRaster.AxOdor1 BpodSystem.ProtocolFigures.lickRaster.AxOdor2 BpodSystem.ProtocolFigures.lickRaster.AxOdor3 BpodSystem.ProtocolFigures.lickRaster.AxOdor4], 'XLim', [startX, startX + S.nidaq.duration]);
                 xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor1, 'Time from cue (s)');
                 xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor2, 'Time from cue (s)');
                 xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor3, 'Time from cue (s)');
-                xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor4, 'Time from cue (s)');
+                xlabel(BpodSystem.ProtocolFigures.lickRaster.AxOdor0, 'Time from cue (s)');
                 
                 shockWindow = BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Shock - BpodSystem.Data.RawEvents.Trial{currentTrial}.States.StartRecording(1);
                 if all(isfinite(shockWindow))

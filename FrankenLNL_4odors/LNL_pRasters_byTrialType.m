@@ -1,4 +1,4 @@
-function LNL_pRasters_byTrialType(Op, varargin)
+function FrankenLNL_pRasters_byTrialTypes(Op, varargin)
     global BpodSystem nidaq
 
         %% optional parameters, first set defaults
@@ -7,7 +7,7 @@ function LNL_pRasters_byTrialType(Op, varargin)
         'lookupFactor', 4;... % 1 - 3 second into recording
         'phRStamp', 6;... % # pixels to push high or low to indicate alternative reinforcement outcomes
         'decimationFactor', nidaq.online.decimationFactor;...
-        'odorsToPlot', [1 2 3 4];...
+        'TrialTypesToPlot', [1 2 3 4];...
         'XLim', 0;...
         };
     [ls, ~] = parse_args(defaults, varargin{:}); % combine default and passed (via varargin) parameter settings
@@ -21,10 +21,10 @@ function LNL_pRasters_byTrialType(Op, varargin)
             BpodSystem.ProtocolFigures.phRaster.decimationFactor = ls.decimationFactor;
             BpodSystem.ProtocolFigures.phRaster.lookupFactor = ls.lookupFactor;
             BpodSystem.ProtocolFigures.phRaster.phRStamp = ls.phRStamp;            
-            BpodSystem.ProtocolFigures.phRaster.odorsToPlot = ls.odorsToPlot;
+            BpodSystem.ProtocolFigures.phRaster.TrialTypesToPlot = ls.TrialTypesToPlot;
            if sum(channelsOn == 1)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch1 = ensureFigure('phRaster_ch1', 1);        
-                nAxes = numel(ls.odorsToPlot);        
+                nAxes = numel(ls.TrialTypesToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
                 params.cellmargin = [0.02 0.02 0.02 0.02];   
                 params.matpos = [0 0 1 1];        
@@ -38,7 +38,7 @@ function LNL_pRasters_byTrialType(Op, varargin)
             end
            if sum(channelsOn == 2)
                 BpodSystem.ProtocolFigures.phRaster.fig_ch2 = ensureFigure('phRaster_ch2', 1);        
-                nAxes = numel(ls.odorsToPlot);        
+                nAxes = numel(ls.TrialTypesToPlot);        
                 % params.matpos defines position of axesmatrix [LEFT TOP WIDTH HEIGHT].    
                 params.cellmargin = [0.02 0.02 0.02 0.02];   
                 params.matpos = [0 0 1 1];        
@@ -58,15 +58,15 @@ function LNL_pRasters_byTrialType(Op, varargin)
 
                
             nTrials = length(BpodSystem.Data.TrialTypes);
-            odorsToPlot = BpodSystem.ProtocolFigures.phRaster.odorsToPlot;
+            TrialTypesToPlot = BpodSystem.ProtocolFigures.phRaster.TrialTypesToPlot;
             phRStamp = BpodSystem.ProtocolFigures.phRaster.phRStamp;
             lookupFactor = BpodSystem.ProtocolFigures.phRaster.lookupFactor;
-            for i = 1:length(odorsToPlot)
-                thisOdorIndex = odorsToPlot(i);
-                thisOdorTrials = onlineFilterTrials_v2('Odor2ValveIndex', thisOdorIndex); % miss or false alarm   
+            for i = 1:length(TrialTypesToPlot)
+                thisTrialTypesIndex = TrialTypesToPlot(i);
+                thisTypesTrials = onlineFilterTrials_v2('TrialTypes', thisTrialTypesIndex); % miss or false alarm   
                 rewardTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Reward');
                 neutralTrials = onlineFilterTrials_v2('ReinforcementOutcome', 'Neutral');
-                punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise','Shock'});                
+                punishTrials = onlineFilterTrials_v2('ReinforcementOutcome', {'Punish', 'WNoise'});                
                 if sum(channelsOn == 1)
                     channelData = BpodSystem.PluginObjects.Photometry.trialDFF{1};
                     nSamples = size(channelData, 2);
@@ -76,12 +76,12 @@ function LNL_pRasters_byTrialType(Op, varargin)
                     ax = BpodSystem.ProtocolFigures.phRaster.ax_ch1(i);
                     
                     CData = NaN(nTrials, nSamples);
-                    CData(thisOdorTrials, :) = channelData(thisOdorTrials, :);
+                    CData(thisTypesTrials, :) = channelData(thisTypesTrials, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(neutralTrials & thisOdorTrials, 1:phRStamp) = 0; 
-                    CData(punishTrials & thisOdorTrials, 1:phRStamp) = -255; 
+                    CData(rewardTrials & thisTypesTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(neutralTrials & thisTypesTrials, 1:phRStamp) = 0; 
+                    CData(punishTrials & thisTypesTrials, 1:phRStamp) = -255; 
                     
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
@@ -99,12 +99,12 @@ function LNL_pRasters_byTrialType(Op, varargin)
                     ax = BpodSystem.ProtocolFigures.phRaster.ax_ch2(i);
                     
                     CData = NaN(nTrials, nSamples);
-                    CData(thisOdorTrials, :) = channelData(thisOdorTrials, :);
+                    CData(thisTypesTrials, :) = channelData(thisTypesTrials, :);
                     % add color tags marking trial reinforcment outcome
                     % high color = reward, 0 color = neutral, low color = punish
-                    CData(rewardTrials & thisOdorTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
-                    CData(neutralTrials & thisOdorTrials, 1:phRStamp) = 0; 
-                    CData(punishTrials & thisOdorTrials, 1:phRStamp) = -255; 
+                    CData(rewardTrials & thisTypesTrials, 1:phRStamp) = 255; % 255 is arbitrary large value that will max out color table
+                    CData(neutralTrials & thisTypesTrials, 1:phRStamp) = 0; 
+                    CData(punishTrials & thisTypesTrials, 1:phRStamp) = -255; 
                     
                     image('YData', [1 size(CData, 1)], 'XData', ls.XLim,... % XData property is a 1 or 2 element vector
                         'CData', CData, 'CDataMapping', 'Scaled', 'Parent', ax);
