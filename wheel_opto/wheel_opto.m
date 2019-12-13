@@ -1,5 +1,5 @@
-function wheel_v1
-
+function wheel_opto
+ % replaces reward with a trigger for pulse pal
     global BpodSystem
     
     TotalRewardDisplay('init')
@@ -19,15 +19,16 @@ function wheel_v1
         'GUI.alternateLEDs', 0;... % alternate which LEDs are turned on (both on, 1 on, 2 on, both on, etc.);
         'GUIMeta.alternateLEDs.Style', 'checkbox';...
         'GUI.LED1_f', 531;...
-        'GUI.LED2_f', 211;...        
+        'GUI.LED2_f', 211;...  
+        'GUI.alternateReward', 0;...
+        'GUIMeta.alternateReward.Style', 'checkbox';...
         'GUI.alternateMod', 0;... % alternate using and not using frequency modulation of the LEDs
-        'GUIMeta.alternateMod.Style', 'checkbox';...        
+        'GUIMeta.alternateMod.Style', 'checkbox';... 
+        'GUI.Reward', 8;...        
         'GUI.mu_IRI', 30;... % mean inter-reward interval
         'GUI.min_IRI', 2;...
         'GUI.max_IRI', 90;...
-        'GUI.Reward', 8;...
-        'GUI.PhotometryOn', 1;...
-        'GUI.PhotometryDutyCycle', 1;... % fraction of trials with photometry
+        'GUI.PhotometryOn', 1;....
         'GUI.RewardValveCode', 1;...
         'GUI.maxReward', 1000;...
         };
@@ -45,6 +46,7 @@ function wheel_v1
     SaveBpodProtocolSettings;
 
     S.RewardValveTime = GetValveTimes(S.GUI.Reward, S.GUI.RewardValveCode);
+    S.LaserTime = 0.05; % just 50ms to trigger pulse pal now
     
     %% Initialize NIDAQ
     S.nidaq.duration = S.GUI.AcqLength;
@@ -72,7 +74,14 @@ function wheel_v1
         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     end
     
-    
+     try
+         load('wheel_opto_pulse.mat');
+         ProgramPulsePal(wheel_opto_pulse);        
+     catch
+         PulsePal;
+         load('wheel_opto_pulse.mat');
+         ProgramPulsePal(wheel_opto_pulse);                 
+     end  
     
     
     
@@ -116,6 +125,7 @@ function wheel_v1
     totalReward = 0;
     for currentTrial = 1:MaxTrials 
 % %       for currentTrial = 1:22
+    nRewardThisTrial = 0;
         if S.GUI.alternateLEDs
             LEDmode = rem(currentTrial, 3);
             switch LEDmode
@@ -159,11 +169,11 @@ function wheel_v1
 %         mode
         
         rewardTimes = max(0, nextReward - S.GUI.Baseline); % delay reward if necessary so it doesn't occur during baseline period
-        if S.GUI.Reward % only if you are giving some reward at all (i.e. reward amount not set to 0)
+%         if S.GUI.Reward % only if you are giving some reward at all (i.e. reward amount not set to 0)
             %% Deliver rewards with approximately flat hazard rate, ITI determined by reward timing        
             while 1
                 thisTime = Inf;
-                while thisTime > S.GUI.max_IRI || (thisTime < S.GUI.min_IRI)   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                while (thisTime > S.GUI.max_IRI) || (thisTime < S.GUI.min_IRI)   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
                     thisTime = exprnd(S.GUI.mu_IRI);
                 end
                 if S.GUI.Baseline + sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) >= S.GUI.AcqLength
@@ -172,9 +182,8 @@ function wheel_v1
                 rewardTimes(end + 1) = thisTime; %really you are collecting durations of inter reward intervals, refer to state matrix construction block
             end
         nextReward = S.GUI.Baseline + sum(rewardTimes) + S.RewardValveTime * (length(rewardTimes) - 1) - S.GUI.AcqLength;            
-        end
-        rewardThisTrial = (length(rewardTimes) - 1) * S.GUI.Reward;
-        totalReward = totalReward + rewardThisTrial;
+%         end
+
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         
         %% state matrix construction                
@@ -189,15 +198,39 @@ function wheel_v1
             'StateChangeConditions',{'Tup','IRI1'},...
             'OutputActions',{});        
         % for loop skipped if no reward occurs this trial
+
         for counter = linspace(1,length(rewardTimes) - 1, length(rewardTimes) - 1) 
+            if S.GUI.alternateReward
+               if rand < 0.5
+                   useReward = true;
+               else
+                   useReward = false;
+               end
+            else
+                useReward = false;
+            end
+            if useReward
+                nextState = ['Reward' num2str(counter)];
+            else
+                nextState = ['Laser' num2str(counter)];
+            end
             sma = AddState(sma,'Name', ['IRI' num2str(counter)], ...
                 'Timer', rewardTimes(counter),...
-                'StateChangeConditions', {'Tup', ['Reward' num2str(counter)]},...
+                'StateChangeConditions', {'Tup', nextState},...
                 'OutputActions', {});
-            sma = AddState(sma,'Name', ['Reward' num2str(counter)], ... 
-                'Timer', S.RewardValveTime,... %
-                'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
-                'OutputActions', {'ValveState', S.GUI.RewardValveCode, 'SoftCode', 1});            
+
+            if ~useReward
+                nRewardThisTrial = nRewardThisTrial + 1;
+                sma = AddState(sma,'Name', ['Laser' num2str(counter)], ... 
+                    'Timer', S.LaserTime,... %
+                    'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
+                    'OutputActions', {'WireState',  bitset(0, 3)});        % removed neutral tone 12/12/19 , 'SoftCode', 1      
+            else
+                sma = AddState(sma,'Name', ['Reward' num2str(counter)], ... 
+                    'Timer', S.RewardValveTime,... %
+                    'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
+                    'OutputActions', {'ValveState', S.GUI.RewardValveCode});    % removed neutral tone 12/12/19 , 'SoftCode', 1          
+            end
         end
         sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % use global timer
             'Timer', 0,...
@@ -216,7 +249,8 @@ function wheel_v1
         RawEvents = RunStateMatrix();  % Blocking!
         toc
         disp('*** trial ended ***');
-
+        rewardThisTrial = nRewardThisTrial * S.GUI.Reward;
+        totalReward = totalReward + rewardThisTrial;
         %% Stop Photometry session
         if S.GUI.PhotometryOn && ~BpodSystem.EmulatorMode
             stopPhotometryAcq;   
@@ -237,12 +271,12 @@ function wheel_v1
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
 %             BpodSystem.Data.Epoch(end + 1) = S.GUI.Epoch;            
-            TotalRewardDisplay('add', rewardThisTrial);        
+%             TotalRewardDisplay('add', rewardThisTrial);        
             %% save data
             SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
-            if totalReward >= S.GUI.maxReward
-                RunProtocol('Stop');
-            end
+%             if totalReward >= S.GUI.maxReward
+%                 RunProtocol('Stop');
+%             end
         else
             disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
         end

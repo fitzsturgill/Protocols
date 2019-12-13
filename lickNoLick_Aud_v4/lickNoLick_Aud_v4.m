@@ -37,9 +37,9 @@ function lickNoLick_Aud_v4
               
         'GUIPanels.Stimuli', {'UsePulsePal', 'MeanSoundFreq1', 'MeanSoundFreq2', 'MeanSoundFreq3', 'MeanSoundFreq4', 'SoundAmplitude', 'Reward', 'PunishValveTime', 'PunishSoundOn', 'PunishSoundAmplitude', 'WhiteNoiseOn', 'WhiteNoiseAmplitude'};... %'neutralToneOn', 'TsToneOn'};...
         'GUI.UsePulsePal', 0;...         
-        'GUI.MeanSoundFreq1', 20000;... % Hz; high value A 
-        'GUI.MeanSoundFreq2', 4000;... % low value B 
-        'GUI.MeanSoundFreq3', 8000;... % punish tone C 
+        'GUI.MeanSoundFreq1', 4000;... % Hz; high value A 
+        'GUI.MeanSoundFreq2', 8000;... % low value B 
+        'GUI.MeanSoundFreq3', 20000;... % neutral tone C 
         'GUI.MeanSoundFreq4', 15000;... % Neutral tone D 
         'GUI.SoundAmplitude', 50;...  % sound amplitude in db
         'GUI.Reward', 8;...
