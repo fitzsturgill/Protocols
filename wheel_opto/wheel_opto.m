@@ -124,8 +124,9 @@ function wheel_opto
     nextReward = 0; % first reward delivered immediately after baseline in first trial
     totalReward = 0;
     for currentTrial = 1:MaxTrials 
+     
 % %       for currentTrial = 1:22
-    nRewardThisTrial = 0;
+        nRewardThisTrial = 0;
         if S.GUI.alternateLEDs
             LEDmode = rem(currentTrial, 3);
             switch LEDmode
@@ -185,7 +186,11 @@ function wheel_opto
 %         end
 
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
-        
+
+        ITI = inf;
+        ITI = rand * 6 % kludgy flatly distributed ITI so that 
+
+
         %% state matrix construction                
         sma = NewStateMatrix(); 
         sma = SetGlobalTimer(sma,1,S.GUI.AcqLength + 0.025); % photometry acq duration
@@ -234,7 +239,11 @@ function wheel_opto
         end
         sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % use global timer
             'Timer', 0,...
-            'StateChangeConditions', {'GlobalTimer1_End','exit'},...
+            'StateChangeConditions', {'GlobalTimer1_End','ITI'},...
+            'OutputActions', {});
+        sma = AddState(sma,'Name', 'ITI', ...
+            'Timer', ITI,...
+            'StateChangeConditions', {'Tup', 'exit'},...
             'OutputActions', {});
         
         %%
@@ -286,5 +295,5 @@ function wheel_opto
             stopPhotometryAcq;   
             return
         end
-        
+
     end
