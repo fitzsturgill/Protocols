@@ -565,28 +565,31 @@ function lickNoLick_Aud_v4
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)        
             
             %TrialOutcome -> NaN: future trial or omission, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
-            if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
-                lickAction = 'lick';
-                ReinforcementOutcome = lickOutcome;               
-                if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
-                    TrialOutcome = 1; % hit
-                elseif S.Block.Table.CSValence(TrialType) == -1
-                    TrialOutcome = 0; % false alarm
-                else
-                    TrialOutcome = NaN; % uncued
-                end
+            if  isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.PostUsRecording)
+                TrialOutcome = NaN;
             else
-                lickAction = 'nolick';
-                ReinforcementOutcome = noLickOutcome;
-                if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
-                    TrialOutcome = -1; % miss
-                elseif S.Block.Table.CSValence(TrialType) == -1
-                    TrialOutcome = 2; % correct rejection
+                if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
+                    lickAction = 'lick';
+                    ReinforcementOutcome = lickOutcome;               
+                    if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
+                        TrialOutcome = 1; % hit
+                    elseif S.Block.Table.CSValence(TrialType) == -1
+                        TrialOutcome = 0; % false alarm
+                    else
+                        TrialOutcome = NaN; % uncued
+                    end
                 else
-                    TrialOutcome = NaN; % uncued
-                end                
+                    lickAction = 'nolick';
+                    ReinforcementOutcome = noLickOutcome;
+                    if S.Block.Table.CSValence(TrialType) == 1 % 1 = CS+, 0 = CS-
+                        TrialOutcome = -1; % miss
+                    elseif S.Block.Table.CSValence(TrialType) == -1
+                        TrialOutcome = 2; % correct rejection
+                    else
+                        TrialOutcome = NaN; % uncued
+                    end                
+                end
             end
-            
             % computer number of answer licks
             answerWindow = [...
                 BpodSystem.Data.RawEvents.Trial{currentTrial}.States.Cue(1)... % start of answer
