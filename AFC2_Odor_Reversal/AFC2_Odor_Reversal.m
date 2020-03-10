@@ -24,8 +24,9 @@ defaults = {...
     'GUI.ResponseWindow', 8;...
     'GUI.CenterPokeTime', 0.05;... % what value to use?
     'GUI.Cue', 1;...
-    'GUI.CueAdjust', 0;... % make check box
-    'GUI.CueAdjust_target', 0;...  % desired cue duration
+    'GUIMeta.CueAdjust.Style', 'checkbox';...
+    'GUI.CueAdjust', true;... % make check box
+    'GUI.CueAdjust_target', 1;...  % desired cue duration
     'GUI.CueAdjust_increment', 0.01;...  % cue duration increment
     'GUI.CueGrace', 0.2;...
     'GUI.DrinkingGrace', 0.2;...
@@ -40,7 +41,11 @@ defaults = {...
     
 
 S = setBpodDefaultSettings(S, defaults);
-
+            
+%% adaptive cue increment
+S.EW_criterion = 0.8;
+S.EW_history = 50;
+S.EW_minTrials = 5;
 %% Pause and wait for user to edit parameter GUI 
 BpodParameterGUI('init', S);    
 BpodSystem.Pause = 1;
@@ -68,6 +73,7 @@ LeftLight = sprintf('PWM%u', S.GUI.LeftPort);
 RightLight = sprintf('PWM%u', S.GUI.RightPort);
 CenterLightOn = {CenterLight, 255};
 SideLightOn = {LeftLight, 255, RightLight, 255};
+
 
 %% Initialize Stimuli
 if ~BpodSystem.EmulatorMode        
@@ -101,13 +107,13 @@ I need: Choice (Left or right), Outcome  (Reward or Neutral), Reward
 amount, what else
 %}
 
-BpodSystem.Data.TrialTypes= []; % The type of each trial completed will be deposited here
-BpodSystem.Data.TrialOutcomes = []; % ditto for outcomes
+BpodSystem.Data.TrialType = []; % The type of each trial completed will be deposited here
+BpodSystem.Data.TrialOutcome = []; % ditto for outcomes
 BpodSystem.Data.Choice = {}; % left or right
 BpodSystem.Data.RewardLeft = []; % in uL
 BpodSystem.Data.RewardRight = []; % in uL
 BpodSystem.Data.RewardCenter = []; % in uL
-BpodSystem.Data.CorrectResponse = {} % left or right
+BpodSystem.Data.CorrectResponse = {}; % left or right
 BpodSystem.Data.BlockNumber = [];
 BpodSystem.Data.EW = []; % early withdrawal, redundant to trial outcomes
 BpodSystem.Data.ITIs = [];
@@ -115,6 +121,31 @@ BpodSystem.Data.OdorValve = []; % e.g. 1st odor = V5, or V6
 BpodSystem.Data.OdorValveIndex = []; % 1st odor, 2nd odor
 BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
 BpodSystem.Data.SwitchParameterCriterion = [];    
+BpodSystem.Data.pf_EW = [];
+BpodSystem.Data.pf_total = [];
+BpodSystem.Data.pf_left = [];
+BpodSystem.Data.pf_right = [];
+
+
+%%
+%% Initialize Figures
+trialsToShow = 100;
+pf.figh= ensureFigure('performance', 1); % performance figure
+pf.ax_outcome = subplot(4,1,1);
+TrialTypeOutcomePlot(pf.ax_outcome,'init',[], 'ntrials', trialsToShow);
+set(pf.ax_outcome, 'FontSize', 8);
+pf.ax_ITI = subplot(4,1,2);
+pf.lh_ITI = plot([],[], 'o'); hold on; ylabel('ITI (s)');
+pf.ax_ew = subplot(4,1,3);
+pf.lh_ew = plot([],[], '-k'); hold on; ylabel('EW');
+% plot([S.EW_minTrials; S.EW_minTrials], [0; 1], '--r');
+pf.ax_pf = subplot(4,1,4);
+pf.lh_pf = plot(NaN,NaN, '-'); hold on; ylabel('performance'); xlabel('Trial #');
+pf.lh_pf_left = plot(NaN,NaN, '-r');  % left, port = red
+pf.lh_pf_right = plot(NaN,NaN, '-g');% right, starboard = green
+legend({'total', 'left', 'right'});
+
+
 
 %% Main trial loop
 RunSession = true;
@@ -128,7 +159,10 @@ while RunSession
     
         S.Block = S.Tables{S.GUI.Block};
         TrialType = pickRandomTrials_blocks(S.Block.Table); % trial type chosen on the fly based upon current Protocol Settings
-        
+        BpodSystem.Data.TrialType(currentTrial) = TrialType; % Adds the trial type of the current trial to data
+        BpodSystem.Data.Outcome(currentTrial) = NaN; % NaN for now to show current trial type while trial is in progress
+        TrialTypeOutcomePlot(pf.ax_outcome, 'update',...
+            currentTrial, BpodSystem.Data.TrialType, BpodSystem.Data.Outcome);
         switch S.Block.Table.Odor(TrialType)
             case 0
                 OdorValve = 0; % uncued
@@ -149,9 +183,18 @@ while RunSession
         OutcomeRight = S.Block.Table.OutcomeRight{TrialType};
         RewardSizeRight = S.Block.Table.RewardSizeRight(TrialType);
         ConditionRight = {RightPortIn, OutcomeRight};    
-
-        LeftValveTime = GetValveTimes(RewardSizeLeft, S.GUI.LeftPort); 
-        RightValveTime = GetValveTimes(RewardSizeRight, S.GUI.RightPort);
+        
+        RewardSizeCenter = S.Block.Table.RewardSizeCenter(TrialType);
+        
+        if ~BpodSystem.EmulatorMode        
+            LeftValveTime = GetValveTimes(RewardSizeLeft, S.GUI.LeftPort); 
+            RightValveTime = GetValveTimes(RewardSizeRight, S.GUI.RightPort);
+            CenterValveTime = GetValveTimes(RewardSizeCenter, S.GUI.CenterPort);
+        else
+            LeftValveTime = 0.01;
+            RightValveTime = 0.01;
+            CenterValveTime = 0.01;
+        end
         
         CorrectResponse = S.Block.Table.CorrectResponse{TrialType};
                                
@@ -172,55 +215,59 @@ while RunSession
         %% cue block with grace period for maintaining center poke
         % trigger global timer defining cue
         sma = AddState(sma, 'Name', 'trigCue', ...
-            'Timer', 0,...
+            'Timer', 0.0002,...
             'StateChangeConditions', {'Tup', 'Cue1'},...
             'OutputActions', {'GlobalTimerTrig', 1});
         % cue1: poke outs trigger grace period, poke ins skip to cue2 to cancel grace period
         sma = AddState(sma, 'Name', 'Cue1',...
-            'Timer', 0,...
+            'Timer', 0.0002,...
             'StateChangeCondtions', {'GlobalTimer1_End', 'WaitForResponse', 'GlobalTimer4_End', 'ITI', CenterPortIn, 'Cue2', CenterPortOut, 'trigGrace_Cue'},...
             'OutputActions', {});
         sma = AddState(sma, 'Name', 'trigGrace_Cue',...
-            'Timer', 0,...
+            'Timer', 0.0002,...
             'StateChangeConditions', {'Tup', 'Cue1'},...
             'OutputActions', {'GlobalTimerTrig', 2});
         % cue2 is for when animal pokes back in, grace period timer is ignored here 
         sma = AddState(sma, 'Name', 'Cue2',...
-            'Timer', 0,...
-            'StateChangeConditions', {'GlobalTimer1_End', 'WaitForResponse', 'Port2Out', 'trigGrace_Cue'},... 
+            'Timer', 0.0002,...
+            'StateChangeConditions', {'GlobalTimer1_End', 'RewardCenter', 'Port2Out', 'trigGrace_Cue'},... 
             'OutputActions', {});
         %  end cue block
         %%
+        sma = AddState(sma, 'Name', 'RewardCenter',...
+            'Timer', max(CenterValveTime, 0.0002),...
+            'StateChangeConditions', {CenterPortOut,'WaitForResponse','Tup','WaitForResponse'},...
+            'OutputActions', {'ValveState', S.GUI.CenterPort});
         sma = AddState(sma, 'Name', 'WaitForResponse', ...
-            'Timer', S.GUI.ResponseWindow, ...
+            'Timer', max(S.GUI.ResponseWindow, 0.0002), ...
             'StateChangeConditions', {'Tup', 'ITI', LeftPortIn, 'LeftChoice', RightPortIn, 'RightChoice'}, ...
             'OutputActions', SideLightOn);
         sma = AddState(sma, 'Name', 'LeftChoice', ...
-            'Timer', 0, ...
+            'Timer', 0.0002, ...
             'StateChangeConditions', ConditionLeft, ...
             'OutputActions', {});
         sma = AddState(sma, 'Name', 'RightChoice', ...
-            'Timer', 0, ...
+            'Timer', 0.0002, ...
             'StateChangeConditions', ConditionRight, ...
             'OutputActions', {});       
         sma = AddState(sma, 'Name', 'RewardLeft', ...
-            'Timer', LeftValveTime,...
+            'Timer', max(LeftValveTime, 0.0002),...
             'StateChangeConditions', {'Tup', 'Drinking'},...
             'OutputActions', [{'ValveState', S.GUI.LeftPort}, SideLightOn]);    
         sma = AddState(sma, 'Name', 'RewardRight', ...
-            'Timer', RightValveTime,...
+            'Timer', max(RightValveTime, 0.0002),...
             'StateChangeConditions', {'Tup', 'Drinking'},...
             'OutputActions', [{'ValveState', S.GUI.RightPort}, SideLightOn]);            
         sma = AddState(sma, 'Name', 'Drinking', ... % let the mouse drink before continuing to next trial
-            'Timer', 0,...
+            'Timer', 0.0002,...
             'StateChangeConditions', {LeftPortOut, 'DrinkingGrace', RightPortOut, 'DrinkingGrace', CenterPortOut, 'DrinkingGrace'},...
             'OutputActions', {});
         sma = AddState(sma, 'Name', 'DrinkingGrace',... % let the mouse drink before continuing to next trial
-            'Timer', S.GUI.DrinkingGrace,...
+            'Timer', max(S.GUI.DrinkingGrace, 0.0002),...
             'StateChangeConditions', {LeftPortIn, 'Drinking', RightPortIn, 'Drinking', CenterPortIn, 'Drinking', 'Tup', 'ITI'},...
             'OutputActions', {});      
         sma = AddState(sma, 'Name', 'Neutral', ... % let the mouse try to drink before continuing to next trial
-            'Timer', 0,...
+            'Timer', 0.0002,...
             'StateChangeConditions', {'Tup', 'Drinking'},...
             'OutputActions', {});
         % what if mouse pokes into side port during ITI? do I require mouse
@@ -228,7 +275,7 @@ while RunSession
         % availability? I could go to "drinking" upon a center poke in....
         % to retrigger the ITI....
         sma = AddState(sma, 'Name', 'ITI', ...
-            'Timer', S.GUI.ITI,...
+            'Timer', max(S.GUI.ITI, 0.0002),...
             'StateChangeConditions', {LeftPortIn, 'Drinking', RightPortIn, 'Drinking', CenterPortIn, 'Drinking', 'Tup', 'exit'},...
             'OutputActions', {});        
         
@@ -244,18 +291,19 @@ while RunSession
             %% collect and save data
             BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents); % computes trial events from raw data
             BpodSystem.Data.TrialSettings(currentTrial) = S; % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)   
-            BpodSystem.Data.TrialType(currentTrial) = TrialType(currentTrial); % Adds the trial type of the current trial to data
-            BpodSystem.Data.BlockNumber(currentTrial) = S.GUI.BlockNumber;
+
+            BpodSystem.Data.BlockNumber(currentTrial) = S.GUI.Block;
             BpodSystem.Data.Block(currentTrial) = S.Block; % save the table, linkto fcn, and linkto block #
             BpodSystem.Data.OdorValveIndex(currentTrial) = S.Block.Table.Odor(TrialType);
             BpodSystem.Data.OdorValve(currentTrial) = OdorValve;
             BpodSystem.Data.CorrectResponse{currentTrial} = CorrectResponse; % left or right
             
-            EW = isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForResponse);
+            EW = isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.WaitForResponse(1));
+
             BpodSystem.Data.EW(currentTrial) = EW;
             if EW
                 choice = '';
-            if ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LeftChoice)
+            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LeftChoice)
                 choice = 'Left';
             elseif ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LeftChoice)
                 choice = 'Right';
@@ -272,7 +320,15 @@ while RunSession
             else
                 BpodSystem.Data.TrialOutcome(currentTrial) = 0; % incorrect
             end
-                
+            
+            if ~EW
+                if strcmpi(choice, 'Left')
+                    TotalRewardDisplay('add', RewardSizeLeft + RewardSizeCenter);
+                else
+                    TotalRewardDisplay('add', RewardSizeRight + RewardSizeCenter);
+                end
+            end
+            
             % calculate total ITI
             if currentTrial == 1
                 ITI = NaN;                
@@ -284,38 +340,54 @@ while RunSession
 
             
             %% adaptive cue increment
-            criterion = 0.8; % fraction correctly initiated trials (not early withdrawal)
-            history = 50; % n trials to consider
-            minTrials = 50;
+
             if S.GUI.CueAdjust
-                if currentTrial > 10
-                   considerTrials =  max(minTrials, currentTrial - history):1:currentTrial;
+                if currentTrial > S.EW_minTrials
+                   considerTrials =  max(S.EW_minTrials, currentTrial - S.EW_history):1:currentTrial;
                    % if not EW on previous trial and performance over
                    % previous n history trials above criterion, increment
                    % cue duration
-                   if ((sum(BpodSystem.Data.EW(considerTrials)) / length(considerTrials)) > criterion) && ~EW
+                   if ((sum(~BpodSystem.Data.EW(considerTrials)) / length(considerTrials)) > S.EW_criterion) && ~EW
                        S.GUI.Cue = min(S.GUI.CueAdjust_target, S.GUI.Cue + S.GUI.CueAdjust_increment);
-                       sprintf('*** Trial %i, Cue time increased to %.3f ***');
+                       sprintf('*** Trial %i, Cue time increased to %.3f ***', currentTrial, S.GUI.Cue);
+                   elseif ((sum(~BpodSystem.Data.EW(considerTrials)) / length(considerTrials)) < S.EW_criterion/2) && EW
+                       S.GUI.Cue = min(S.GUI.CueAdjust_target, S.GUI.Cue - S.GUI.CueAdjust_increment);
+                       sprintf('*** Trial %i, Cue time decreased to %.3f ***', currentTrial, S.GUI.Cue);
                    end
                 end
             end
-%                 winsize = 20; % 20 trial sum
-%     h = ensureFigure('Posner_stage3_Performance', 1);
-%     subplot(3,1,1);
-%     plot(movsum(correctLeft, winsize) ./ movsum(totalLeft, winsize), 'g'); hold on;
-%     plot(movsum(correctRight, winsize) ./ movsum(totalRight, winsize), 'r');
-%     plot(movsum(correctBoth, winsize) ./ movsum(totalBoth, winsize), 'b');
-%     legend({'Left', 'Right'}, 'Box', 'off');
+            BpodSystem.Data.pf_EW = movmean(~BpodSystem.Data.EW, [S.EW_history, 0], 'Endpoints', 'shrink'); % logical inconsistency, doesn't reflect minTrials
+
+
             
-            winsize = 20; % 20 trial sum
+
             %% calculate performance
+            winsize = 20; % 20 trial sum
             performance_total = movsum(BpodSystem.Data.TrialOutcome == 1, [winsize, 0], 'Endpoints', 'fill') ./ movsum(BpodSystem.Data.TrialOutcome ~= -1, [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
             performance_left = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left') , [winsize, 0], 'Endpoints', 'fill')...
                 ./ movsum(BpodSystem.Data.TrialOutcome ~= -1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left'), [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
             performance_right = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Right') , [winsize, 0], 'Endpoints', 'fill')...
                 ./ movsum(BpodSystem.Data.TrialOutcome ~= -1 & strcmp(BpodSystem.Data.CorrectResponse, 'Right'), [winsize, 0], 'Endpoints', 'fill'); % winsize trials back            
+            BpodSystem.Data.PF_total = performance_total;
+            BpodSystem.Data.PF_left = performance_left;
+            BpodSystem.Data.PF_right = performance_right;
             
-            
+%             pf.figh= ensureFigure('performance', 1); % performance figure
+% pf.ax_outcome = subplot(3,1,1);
+% TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'init',[], 'ntrials', trialsToShow);
+% pf.ax_ITI = subplot(3,1,2);
+% pf.ax_pf = subplot(3,1,3);
+            %% update plots
+            TrialTypeOutcomePlot(pf.ax_outcome, 'update',...
+                currentTrial, BpodSystem.Data.TrialType, BpodSystem.Data.Outcome);
+            % update ITIs plot
+            set(pf.lh_ITI, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.ITIs);
+            % update EW plot
+            set(pf.lh_ew, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.pf_EW);
+            % update performance plot
+            set(pf.lh_pf, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.pf_total);
+            set(pf.lh_pf_left, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.pf_left);
+            set(pf.lh_pf_right, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.pf_right);
             %% adaptive bias correction, let's try a 150 trial window over previous trials
             
             
@@ -324,9 +396,11 @@ while RunSession
             %% Save protocol settings to reflect updated values
             BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
             BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
-            SaveBpodProtocolSettings;        
+            SaveBpodProtocolSettings;     
+            end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
             return
         end
+        currentTrial = currentTrial + 1;
 end 
