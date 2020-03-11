@@ -178,11 +178,11 @@ while RunSession
         
         OutcomeLeft = S.Block.Table.OutcomeLeft{TrialType};
         RewardSizeLeft = S.Block.Table.RewardSizeLeft(TrialType); % only relevant if OutcomeLeft = 'Reward'        
-        ConditionLeft = {LeftPortIn, OutcomeLeft};
+%         ConditionLeft = {LeftPortIn, OutcomeLeft};
         
         OutcomeRight = S.Block.Table.OutcomeRight{TrialType};
         RewardSizeRight = S.Block.Table.RewardSizeRight(TrialType);
-        ConditionRight = {RightPortIn, OutcomeRight};    
+%         ConditionRight = {RightPortIn, OutcomeRight};    
         
         RewardSizeCenter = S.Block.Table.RewardSizeCenter(TrialType);
         
@@ -244,11 +244,11 @@ while RunSession
             'OutputActions', SideLightOn);
         sma = AddState(sma, 'Name', 'LeftChoice', ...
             'Timer', 0.0002, ...
-            'StateChangeConditions', ConditionLeft, ...
+            'StateChangeConditions', {'Tup', OutcomeLeft}, ...
             'OutputActions', {});
         sma = AddState(sma, 'Name', 'RightChoice', ...
             'Timer', 0.0002, ...
-            'StateChangeConditions', ConditionRight, ...
+            'StateChangeConditions', {'Tup', OutcomeRight}, ...
             'OutputActions', {});       
         sma = AddState(sma, 'Name', 'RewardLeft', ...
             'Timer', max(LeftValveTime, 0.0002),...
@@ -363,11 +363,17 @@ while RunSession
 
             %% calculate performance
             winsize = 20; % 20 trial sum
-            performance_total = movsum(BpodSystem.Data.TrialOutcome == 1, [winsize, 0], 'Endpoints', 'fill') ./ movsum(BpodSystem.Data.TrialOutcome ~= -1, [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
-            performance_left = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left') , [winsize, 0], 'Endpoints', 'fill')...
-                ./ movsum(BpodSystem.Data.TrialOutcome ~= -1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left'), [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
-            performance_right = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Right') , [winsize, 0], 'Endpoints', 'fill')...
-                ./ movsum(BpodSystem.Data.TrialOutcome ~= -1 & strcmp(BpodSystem.Data.CorrectResponse, 'Right'), [winsize, 0], 'Endpoints', 'fill'); % winsize trials back            
+            if currentTrial >= winsize
+                performance_total = movsum(BpodSystem.Data.TrialOutcome == 1, [winsize, 0], 'Endpoints', 'fill') ./ movsum(BpodSystem.Data.TrialOutcome ~= -1, [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
+                performance_left = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left') , [winsize, 0], 'Endpoints', 'fill')...
+                    ./ movsum(BpodSystem.Data.TrialOutcome ~= -1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left'), [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
+                performance_right = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Right') , [winsize, 0], 'Endpoints', 'fill')...
+                    ./ movsum(BpodSystem.Data.TrialOutcome ~= -1 & strcmp(BpodSystem.Data.CorrectResponse, 'Right'), [winsize, 0], 'Endpoints', 'fill'); % winsize trials back
+            else
+                performance_total = NaN;
+                performance_left = NaN;
+                performance_right = NaN;
+            end
             BpodSystem.Data.PF_total = performance_total;
             BpodSystem.Data.PF_left = performance_left;
             BpodSystem.Data.PF_right = performance_right;
