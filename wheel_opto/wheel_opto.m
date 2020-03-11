@@ -69,18 +69,22 @@ function wheel_opto
         % linear ramp of sound for 10ms at onset and offset
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
         neutralTone = neutralTone / 100;
+        laserTone = SoundGenerator_SL(SF, 8000, 2.5, 50);
+        laserTone2 = SoundGenerator_SL(SF, 4000, 1, 50);
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
+        PsychToolboxSoundServer('Load', 2, laserTone);
+        PsychToolboxSoundServer('Load', 3, laserTone2);
         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     end
     
      try
-         load('wheel_opto_pulse.mat');
-         ProgramPulsePal(wheel_opto_pulse);        
+         load('wheel_opto_pulse_burst.mat');
+         ProgramPulsePal(wheel_opto_pulse_burst);        
      catch
          PulsePal;
-         load('wheel_opto_pulse.mat');
-         ProgramPulsePal(wheel_opto_pulse);                 
+         load('wheel_opto_pulse_burst.mat');
+         ProgramPulsePal(wheel_opto_pulse_burst);                 
      end  
     
     
@@ -197,7 +201,7 @@ function wheel_opto
         sma = AddState(sma, 'Name', 'Start', ...
             'Timer', 0.025,...
             'StateChangeConditions', {'Tup', 'Baseline'},...
-            'OutputActions', {'BNCState', npgBNCArg, 'WireState', npgWireArg, 'GlobalTimerTrig', 1});
+            'OutputActions', {'BNCState', npgBNCArg, 'WireState', npgWireArg, 'GlobalTimerTrig', 1, 'SoftCode', 255});
         sma = AddState(sma, 'Name','Baseline',...
             'Timer',S.GUI.Baseline,...
             'StateChangeConditions',{'Tup','IRI1'},...
@@ -229,7 +233,7 @@ function wheel_opto
                 sma = AddState(sma,'Name', ['Laser' num2str(counter)], ... 
                     'Timer', S.LaserTime,... %
                     'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
-                    'OutputActions', {'WireState',  bitset(0, 3)});        % removed neutral tone 12/12/19 , 'SoftCode', 1      
+                    'OutputActions', {'WireState',  bitset(0, 3), 'SoftCode', 3});        % removed neutral tone 12/12/19 , 'SoftCode', 1      
             else
                 sma = AddState(sma,'Name', ['Reward' num2str(counter)], ... 
                     'Timer', S.RewardValveTime,... %
@@ -244,7 +248,7 @@ function wheel_opto
         sma = AddState(sma,'Name', 'ITI', ...
             'Timer', ITI,...
             'StateChangeConditions', {'Tup', 'exit'},...
-            'OutputActions', {});
+            'OutputActions', {'SoftCode', 255});
         
         %%
         SendStateMatrix(sma);

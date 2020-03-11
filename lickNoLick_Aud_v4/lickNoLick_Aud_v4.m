@@ -3,7 +3,6 @@ function lickNoLick_Aud_v4
     global BpodSystem
     
     %% CS valence is important-   explain here!!!
-    
     TotalRewardDisplay('init')
     %% Define parameters
     S = BpodSystem.ProtocolSettings; % Load settings chosen in launch manager into current workspace as a struct called S
@@ -173,9 +172,9 @@ function lickNoLick_Aud_v4
     
         %% Initialize olfactometer and point grey camera
         % retrieve machine specific olfactometer settings
-        addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
-        olfSettings = machineSpecific_Olfactometer;
-        rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict
+%         addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
+%         olfSettings = machineSpecific_Olfactometer;
+%         rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict
 
         % retrieve machine specific point grey camera settings
         addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
@@ -183,18 +182,18 @@ function lickNoLick_Aud_v4
         rmpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % remove it just in case there would somehow be a name conflict    
 
         % initialize olfactometer slave arduino
-        valveSlave = initValveSlave(olfSettings.portName);
-        if isempty(valveSlave)
-            BpodSystem.BeingUsed = 0;
-            error('*** Failure to initialize valve slave ***');
-        end
+%         valveSlave = initValveSlave(olfSettings.portName);
+%         if isempty(valveSlave)
+%             BpodSystem.BeingUsed = 0;
+%             error('*** Failure to initialize valve slave ***');
+%         end
     end
 
     % determine nidaq/point grey and olfactometer triggering arguments
     npgWireArg = 0;
     npgBNCArg = 1; % BNC 1 source to trigger Nidaq is hard coded
-    olfWireArg = 0;
-    olfBNCArg = 0;
+%     olfWireArg = 0;
+%     olfBNCArg = 0;
     if ~BpodSystem.EmulatorMode
         switch pgSettings.triggerType
             case 'WireState'
@@ -204,12 +203,12 @@ function lickNoLick_Aud_v4
         end
         olfWireArg = 0;
         olfBNCArg = 0;
-        switch olfSettings.triggerType
-            case 'WireState'
-                olfWireArg = bitset(olfWireArg, olfSettings.triggerNumber);
-            case 'BNCState'
-                olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
-        end
+%         switch olfSettings.triggerType
+%             case 'WireState'
+%                 olfWireArg = bitset(olfWireArg, olfSettings.triggerNumber);
+%             case 'BNCState'
+%                 olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
+%         end
     end
     %% initialize trial types and outcomes
     MaxTrials = 1000;
@@ -245,7 +244,7 @@ function lickNoLick_Aud_v4
     
     %% Main trial loop
     for currentTrial = 1:MaxTrials      
-        
+        startTrial = tic;
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
         BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
         SaveBpodProtocolSettings;
@@ -424,16 +423,16 @@ function lickNoLick_Aud_v4
         %% update Sound valve number for current trial
         if ~BpodSystem.EmulatorMode
 %             slaveResponse = updateValveSlave(valveSlave, OdorValve); 
-            slaveResponse = updateValveSlave(valveSlave, SoundValve); 
-            S.currentValve = slaveResponse;
-            if isempty(slaveResponse)
-                disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
-                continue
-            else
-                disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
-                disp(['S.FP = ' num2str(S.FP)]);
-                disp(['S.GUI.OutcomeDelay = ' num2str(S.GUI.OutcomeDelay)]);
-            end
+%             slaveResponse = updateValveSlave(valveSlave, SoundValve); 
+%             S.currentValve = slaveResponse;
+%             if isempty(slaveResponse)
+%                 disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
+%                 continue
+%             else
+%                 disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+%                 disp(['S.FP = ' num2str(S.FP)]);
+%                 disp(['S.GUI.OutcomeDelay = ' num2str(S.GUI.OutcomeDelay)]);
+%             end
         end
         disp(['*** Trial Type = ' num2str(TrialType) ' Block = ' num2str(S.GUI.Block) ' ***']);
         S.Block.Table % display current block (should have this be in a GUI window eventually)  
@@ -695,10 +694,11 @@ function lickNoLick_Aud_v4
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
             if ~BpodSystem.EmulatorMode
-                fclose(valveSlave);
-                delete(valveSlave);
+%                 fclose(valveSlave);
+%                 delete(valveSlave);
             end
             return
         end 
+
     end
             
