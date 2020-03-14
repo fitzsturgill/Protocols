@@ -33,20 +33,20 @@ function odorTest
     
     
     %% Initialize Sound Stimuli to signal odor valve actuation
-    SF = 192000; 
-    % linear ramp of sound for 10ms at onset and offset
-    oneBeep = makeBeeps(1);
-    twoBeep = makeBeeps(2);
-    threeBeep = makeBeeps(3);
-    fourBeep = makeBeeps(4);
-    PsychToolboxSoundServer('init')
-    PsychToolboxSoundServer('Load', 1, oneBeep);
-    PsychToolboxSoundServer('Load', 2, twoBeep);
-    PsychToolboxSoundServer('Load', 3, threeBeep);
-    PsychToolboxSoundServer('Load', 4, fourBeep);
-    BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
-    
-    
+%     SF = 192000; 
+%     % linear ramp of sound for 10ms at onset and offset
+%     oneBeep = makeBeeps(1);
+%     twoBeep = makeBeeps(2);
+%     threeBeep = makeBeeps(3);
+%     fourBeep = makeBeeps(4);
+%     PsychToolboxSoundServer('init')
+%     PsychToolboxSoundServer('Load', 1, oneBeep);
+%     PsychToolboxSoundServer('Load', 2, twoBeep);
+%     PsychToolboxSoundServer('Load', 3, threeBeep);
+%     PsychToolboxSoundServer('Load', 4, fourBeep);
+%     BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
+%     
+%     
     % retrieve machine specific olfactometer settings
     addpath(genpath(fullfile(BpodSystem.BpodUserPath, 'Settings Files'))); % Settings path is assumed to be shielded by gitignore file
     olfSettings = machineSpecific_Olfactometer;
@@ -105,22 +105,26 @@ function odorTest
             'Timer', 4,...
             'StateChangeConditions', {'Tup', 'cueOdor'},...
             'OutputActions', {});         
+%         sma = AddState(sma, 'Name', 'cueOdor', ... 
+%             'Timer', 0.1,...
+%             'StateChangeConditions', {'Tup', 'Delay'},...
+%             'OutputActions', {'SoftCode', softCode}); 
         sma = AddState(sma, 'Name', 'cueOdor', ... 
             'Timer', 0.1,...
             'StateChangeConditions', {'Tup', 'Delay'},...
-            'OutputActions', {'SoftCode', softCode}); 
+            'OutputActions', {}); 
         sma = AddState(sma,'Name', 'Delay', ...
             'Timer', 0.5,...
             'StateChangeConditions', {'Tup', 'Odor'},...
             'OutputActions', {});       
-%         sma = AddState(sma, 'Name', 'Odor', ... 
-%             'Timer', 1,...
-%             'StateChangeConditions', {'Tup','exit'},...
-%             'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});        
         sma = AddState(sma, 'Name', 'Odor', ... 
             'Timer', 1,...
             'StateChangeConditions', {'Tup','exit'},...
-            'OutputActions', {'WireState', olfWireArg, 'BNCState', 2});  
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});        
+%         sma = AddState(sma, 'Name', 'Odor', ... 
+%             'Timer', 1,...
+%             'StateChangeConditions', {'Tup','exit'},...
+%             'OutputActions', {'WireState', olfWireArg, 'BNCState', 2});  
         
         %%
         SendStateMatrix(sma);        
@@ -138,13 +142,13 @@ function odorTest
     end
 end
 
-function beeps =  makeBeeps(nBeeps)
-SF = 192000; 
-Duration = 0.1;
-Frequency = 2000;
-    dt = 1/SF;
-    t = 0:dt:Duration;
-    SineWave=sin(2*pi*Frequency*t)/100;
-
-    beeps = repmat([SineWave SineWave .* 0], 1, nBeeps);
-end
+% function beeps =  makeBeeps(nBeeps)
+% SF = 192000; 
+% Duration = 0.1;
+% Frequency = 2000;
+%     dt = 1/SF;
+%     t = 0:dt:Duration;
+%     SineWave=sin(2*pi*Frequency*t)/100;
+% 
+%     beeps = repmat([SineWave SineWave .* 0], 1, nBeeps);
+% end

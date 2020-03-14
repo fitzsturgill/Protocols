@@ -97,6 +97,16 @@ if ~BpodSystem.EmulatorMode
         BpodSystem.BeingUsed = 0;
         error('*** Failure to initialize valve slave ***');
     end
+    
+    olfWireArg = 0;
+    olfBNCArg = 0;    
+    
+    switch olfSettings.triggerType
+        case 'WireState'
+            olfWireArg = bitset(olfWireArg, olfSettings.triggerNumber);
+        case 'BNCState'
+            olfBNCArg = bitset(olfBNCArg, olfSettings.triggerNumber);
+    end   
 end
 
 %% Initialize Photometry
@@ -179,6 +189,15 @@ while RunSession
                 OdorValve = S.GUI.Odor4Valve;                
         end
         
+        slaveResponse = updateValveSlave(valveSlave, OdorValve); 
+        if isempty(slaveResponse)
+            disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
+            continue
+        else
+            disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+        end 
+        
+                
         OutcomeLeft = S.Block.Table.OutcomeLeft{TrialType};
         RewardSizeLeft = S.Block.Table.RewardSizeLeft(TrialType); % only relevant if OutcomeLeft = 'Reward'        
 %         ConditionLeft = {LeftPortIn, OutcomeLeft};
@@ -225,16 +244,16 @@ while RunSession
         sma = AddState(sma, 'Name', 'Cue1',...
             'Timer', 0.0002,...
             'StateChangeCondtions', {'GlobalTimer1_End', 'RewardCenter', 'GlobalTimer2_End', 'ITI', CenterPortIn, 'Cue2', CenterPortOut, 'trigGrace_Cue'},...
-            'OutputActions', {});
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});
         sma = AddState(sma, 'Name', 'trigGrace_Cue',...
             'Timer', 0.0002,...
             'StateChangeConditions', {'Tup', 'Cue1'},...
-            'OutputActions', {'GlobalTimerTrig', 2});
+            'OutputActions', {'GlobalTimerTrig', 2, 'WireState', olfWireArg, 'BNCState', olfBNCArg});
         % cue2: cancel grace period
         sma = AddState(sma, 'Name', 'Cue2',...
             'Timer', 0.0002,...
             'StateChangeConditions', {'GlobalTimer1_End', 'RewardCenter', CenterPortOut, 'trigGrace_Cue'},... 
-            'OutputActions', {});
+            'OutputActions', {'WireState', olfWireArg, 'BNCState', olfBNCArg});
         %  end cue block
         %%
         sma = AddState(sma, 'Name', 'RewardCenter',...
@@ -376,9 +395,9 @@ while RunSession
                 performance_left = NaN;
                 performance_right = NaN;
             end
-            BpodSystem.Data.PF_total = performance_total;
-            BpodSystem.Data.PF_left = performance_left;
-            BpodSystem.Data.PF_right = performance_right;
+            BpodSystem.Data.pf_total = performance_total;
+            BpodSystem.Data.pf_left = performance_left;
+            BpodSystem.Data.pf_right = performance_right;
             
 %             pf.figh= ensureFigure('performance', 1); % performance figure
 % pf.ax_outcome = subplot(3,1,1);
@@ -411,7 +430,13 @@ while RunSession
             end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
+            fclose(valveSlave);
+            delete(valveSlave);
             return
         end
         currentTrial = currentTrial + 1;
 end 
+if BpodSystem.BeingUsed == 0
+    fclose(valveSlave);
+    delete(valveSlave);
+end
