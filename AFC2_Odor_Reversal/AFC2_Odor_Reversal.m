@@ -266,11 +266,11 @@ while RunSession
         sma = AddState(sma, 'Name', 'LeftChoice', ...
             'Timer', max(0.0002, S.GUI.FeedbackDelay), ...
             'StateChangeConditions', {'Tup', OutcomeLeft}, ...
-            'OutputActions', {});
+            'OutputActions', SideLightOn);
         sma = AddState(sma, 'Name', 'RightChoice', ...
             'Timer', max(0.0002, S.GUI.FeedbackDelay), ...
             'StateChangeConditions', {'Tup', OutcomeRight}, ...
-            'OutputActions', {});       
+            'OutputActions', SideLightOn);       
         sma = AddState(sma, 'Name', 'RewardLeft', ...
             'Timer', max(LeftValveTime, 0.0002),...
             'StateChangeConditions', {'Tup', 'Drinking'},...
@@ -326,7 +326,7 @@ while RunSession
                 choice = '';
             elseif ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LeftChoice)
                 choice = 'Left';
-            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.LeftChoice)
+            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.RightChoice)
                 choice = 'Right';
             else
                 choice = '';
@@ -382,7 +382,7 @@ while RunSession
             
 
             %% calculate performance
-            winsize = 5; % 20 trial sum
+            winsize = 20; % 20 trial sum
             if currentTrial >= winsize
                 performance_total = movsum(BpodSystem.Data.TrialOutcome == 1, [winsize, 0], 'Endpoints', 'shrink') ./ movsum(BpodSystem.Data.TrialOutcome ~= -1, [winsize, 0], 'Endpoints', 'shrink'); % winsize trials back
                 performance_left = movsum(BpodSystem.Data.TrialOutcome == 1 & strcmp(BpodSystem.Data.CorrectResponse, 'Left') , [winsize, 0], 'Endpoints', 'shrink')...
@@ -425,8 +425,12 @@ while RunSession
             %% Save protocol settings to reflect updated values
             BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
             BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
-            SaveBpodProtocolSettings;     
-            end
+            SaveBpodProtocolSettings;  
+            %% save data
+            SaveBpodSessionData; % Saves the field BpodSystem.Data to the current data file
+        else
+            disp([' *** Trial # ' num2str(currentTrial) ':  aborted, data not saved ***']); % happens when you abort early (I think), e.g. when you are halting session
+        end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
             fclose(valveSlave);
