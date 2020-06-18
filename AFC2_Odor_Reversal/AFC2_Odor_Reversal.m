@@ -30,7 +30,7 @@ defaults = {...
     'GUI.CueGrace', 0.1;...
     'GUI.FeedbackDelay', 0.1;...
     'GUI.DrinkingGrace', 0.1;... % not yet implemented
-    'GUI.ITI', 0;... % do I need an ITI?
+    'GUI.ITI', 0;... % now refers to mean of exponentially disributed ITI distribution
     'GUI.Block', 1;...  
     'GUI.Odor1Valve', 5;...
     'GUI.Odor2Valve', 6;...
@@ -218,6 +218,14 @@ while RunSession
         end
         
         CorrectResponse = S.Block.Table.CorrectResponse{TrialType};
+        
+        
+        if S.GUI.ITI
+            ITI = inf;
+            while ITI > 3 * S.GUI.ITI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
+                ITI = exprnd(S.GUI.ITI);
+            end        
+        end
                                
         sma = NewStateMatrix(); % Assemble state matrix
         sma = SetGlobalTimer(sma,1,S.GUI.Cue); % cue
@@ -296,7 +304,7 @@ while RunSession
         % availability? I could go to "drinking" upon a center poke in....
         % to retrigger the ITI....
         sma = AddState(sma, 'Name', 'ITI', ...
-            'Timer', max(S.GUI.ITI, 0.0002),...
+            'Timer', max(ITI, 0.0002),...
             'StateChangeConditions', {LeftPortIn, 'Drinking', RightPortIn, 'Drinking', CenterPortIn, 'Drinking', 'Tup', 'exit'},...
             'OutputActions', {});        
         
@@ -349,6 +357,18 @@ while RunSession
                     TotalRewardDisplay('add', RewardSizeRight + RewardSizeCenter);
                 end
             end
+            
+            if ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.RewardLeft)
+                BpodSystem.Data.RewardLeft(currentTrial) = RewardSizeLeft;
+            elseif ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.RewardRight)
+                BpodSystem.Data.RewardRight(currentTrial) = RewardSizeRight;
+            end
+            
+            if ~isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.RewardCenter)
+                BpodSystem.Data.RewardCenter(currentTrial) = RewardSizeCenter;
+            end
+                
+            
             
             % calculate total ITI
             if currentTrial == 1
