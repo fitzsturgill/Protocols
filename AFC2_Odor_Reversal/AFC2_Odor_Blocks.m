@@ -55,8 +55,6 @@ S.LinkToFcn = '';
 blocks{end + 1} = S;
 
 
-
-blocks{end + 1} = S;
 % block 4, stage 2, quick and dirty bias left (to correct right bias)
 S = struct(); ST = struct();
 ST.BlockNumber = [4; 4; 4; 4]; % fluff
