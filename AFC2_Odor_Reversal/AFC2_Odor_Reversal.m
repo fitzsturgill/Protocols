@@ -314,6 +314,7 @@ while RunSession
 % BpodSystem.Data.SwitchParameter = []; % e.g. nCorrect or response rate difference (hit rate - false alarm rate), dependent upon block switch LinkTo function 
 % BpodSystem.Data.SwitchParameterCriterion = [];    
 
+%%
 % NaN: future trial (blue), -1: early withdrawal (red circle), 0: disfavored
 % choice (red dot), 1: favored choice (green dot), 2: did not choose (green circle)
         if ~isempty(fieldnames(RawEvents)) % If trial data was returned
