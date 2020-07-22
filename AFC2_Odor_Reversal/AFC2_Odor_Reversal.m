@@ -441,6 +441,19 @@ while RunSession
             %% adaptive bias correction, let's try a 150 trial window over previous trials
             
             
+            %% adaptive block switches
+            S.Block.Table.OutcomeLeft{TrialType};
+            if S.Block.LinkTo
+                switchFcn = str2func(S.Block.LinkToFcn);
+                [S.GUI.Block, switchParameter, switchParameterCriterion] = switchFcn(BpodSystem.Data.TrialOutcome, BpodSystem.Data.BlockNumber, S.Block.LinkTo);
+                S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
+            else
+                switchParameter = NaN;
+                switchParameterCriterion = NaN;
+            end
+            BpodSystem.Data.SwitchParameter(end + 1) = switchParameter(1);
+            BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
+            
             
             
             %% Save protocol settings to reflect updated values

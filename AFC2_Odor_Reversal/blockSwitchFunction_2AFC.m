@@ -1,4 +1,4 @@
-function [nextBlock, switchParameter, criterion] = blockSwitchFunction_2AFC(outcomes, blockNumbers, varargin)
+function [nextBlock, switchParameter, criterion] = blockSwitchFunction_2AFC(outcomes, blockNumbers, LinkTo, varargin)
 
 % outcomes-  vector of outcomes (1xnTrials)
 % blockNubers-  vector of blockNumbers (1xnTrials)
@@ -40,7 +40,7 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_2AFC(outc
    
 
     if totalTrials >= bss.minTrials
-        nextBlock = S.block.LinkTo;
+        nextBlock = LinkTo;
     end
    
 

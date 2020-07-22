@@ -73,6 +73,42 @@ S.LinkToFcn = '';
 blocks{end + 1} = S;
 
 
+
+%% automatic blocks
+
+% block 5, 
+S = struct(); ST = struct();
+ST.BlockNumber = [5; 5; 5; 5]; % fluff
+ST.P = [0.5 * 1; 0.5 * 0; 0.5 * 1; 0.5 * 0];
+ST.Odor = [1; 1; 2; 2]; % will be used to select S.GUI.Odor1Valve
+ST.CorrectResponse = {'Left'; 'Left'; 'Right'; 'Right'};
+ST.OutcomeLeft = {'RewardLeft'; 'Neutral'; 'Neutral'; 'RewardLeft'};   % Reward
+ST.OutcomeRight = {'Neutral'; 'RewardRight'; 'RewardRight'; 'Neutral';};
+ST.RewardSizeLeft = [5; 5; 5; 5];   % uL
+ST.RewardSizeRight = [5; 5; 5; 5];  % uL 
+ST.RewardSizeCenter = [1; 1; 1; 1];  % uL 
+S.Table = struct2table(ST);
+S.LinkTo = 6;
+S.LinkToFcn = 'blockSwitchFunction_2AFC';
+blocks{end + 1} = S;
+
+
+% block 6, 
+S = struct(); ST = struct();
+ST.BlockNumber = [6; 6; 6; 6]; % fluff
+ST.P = [0.5 * 1; 0.5 * 0; 0.5 * 1; 0.5 * 0];
+ST.Odor = [2; 2; 1; 1]; % will be used to select S.GUI.Odor1Valve
+ST.CorrectResponse = {'Left'; 'Left'; 'Right'; 'Right'};
+ST.OutcomeLeft = {'RewardLeft'; 'Neutral'; 'Neutral'; 'RewardLeft'};   % Reward
+ST.OutcomeRight = {'Neutral'; 'RewardRight'; 'RewardRight'; 'Neutral';};
+ST.RewardSizeLeft = [5; 5; 5; 5];   % uL
+ST.RewardSizeRight = [5; 5; 5; 5];  % uL 
+ST.RewardSizeCenter = [1; 1; 1; 1];  % uL 
+S.Table = struct2table(ST);
+S.LinkTo = 5;
+S.LinkToFcn = 'blockSwitchFunction_2AFC';
+blocks{end + 1} = S;
+
 %%
 % % block 1, stage 1, early training block
 % S = struct(); ST = struct();
