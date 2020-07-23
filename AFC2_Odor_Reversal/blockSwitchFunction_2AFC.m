@@ -3,11 +3,14 @@ function [nextBlock, switchParameter, criterion] = blockSwitchFunction_2AFC(outc
 % outcomes-  vector of outcomes (1xnTrials)
 % blockNubers-  vector of blockNumbers (1xnTrials)
 
+% switchParameter-   this function outputs percent correct over last n
+% trials
+
 %% optional parameters, first set defaults
     defaults = {...
-        'window', 10;... % n trials comprise the window for calculating performance
-        'criterion', 0.9;... % percent correct over last n trials
-        'minTrials', 50;... % minimum trials to trigger reversal, should be >= window
+        'window', 20;... % 20 trials comprise the window for calculating performance
+        'criterion', 0.85;... % percent correct over last n trials
+        'minTrials', 30;... % 50 minimum trials to trigger reversal, should be >= window
         };
     [bss, ~] = parse_args(defaults, varargin{:}); % block switch settings    
     assert(bss.minTrials >= bss.window, 'minTrials must be >= window');

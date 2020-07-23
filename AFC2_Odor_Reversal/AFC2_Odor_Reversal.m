@@ -78,6 +78,8 @@ SideLightOn = {LeftLight, 255, RightLight, 255};
 
 
 %% Initialize Stimuli
+olfWireArg = 0;
+olfBNCArg = 0;    
 if ~BpodSystem.EmulatorMode        
     %% Initialize olfactometer and point grey camera
     % retrieve machine specific olfactometer settings
@@ -97,8 +99,7 @@ if ~BpodSystem.EmulatorMode
         error('*** Failure to initialize valve slave ***');
     end
     
-    olfWireArg = 0;
-    olfBNCArg = 0;    
+
     
     switch olfSettings.triggerType
         case 'WireState'
@@ -139,7 +140,7 @@ BpodSystem.Data.pf_left = [];
 BpodSystem.Data.pf_right = [];
 
 
-%%
+
 %% Initialize Figures
 trialsToShow = 100;
 pf.figh= ensureFigure('performance', 1); % performance figure
@@ -157,6 +158,16 @@ pf.lh_pf_left = plot(NaN,NaN, '-r');  % left, port = red
 pf.lh_pf_right = plot(NaN,NaN, '-g');% right, starboard = green
 legend({'total', 'left', 'right'});
 
+
+
+cr.figh = ensureFigure('criterion', 1); 
+% cr.ax = subplot(2,1,1, 'NextPlot', 'add');
+% cr.sh = scatter([], [], 20, [], 'Parent', cr.ax); 
+% ylabel('auROC');
+cr.ax = subplot(1,1,1, 'NextPlot', 'add'); % plot switchParameter
+cr.clh = line(0,0, 'Parent', cr.ax, 'Color', 'g');
+cr.splh = line(0,0, 'Parent', cr.ax, 'Color', 'k');
+ylabel('perc. Corr.'); xlabel('trial number');
 
 
 %% Main trial loop
@@ -188,13 +199,15 @@ while RunSession
                 OdorValve = S.GUI.Odor4Valve;                
         end
         
-        slaveResponse = updateValveSlave(valveSlave, OdorValve); 
-        if isempty(slaveResponse)
-            disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
-            continue
-        else
-            disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
-        end 
+        if ~BpodSystem.EmulatorMode 
+            slaveResponse = updateValveSlave(valveSlave, OdorValve); 
+            if isempty(slaveResponse)
+                disp(['*** Valve Code not succesfully updated, trial #' num2str(currentTrial) ' skipped ***']);
+                continue
+            else
+                disp(['*** Valve #' num2str(slaveResponse) ' Trial #' num2str(currentTrial) ' ***']);
+            end 
+        end
         
                 
         OutcomeLeft = S.Block.Table.OutcomeLeft{TrialType};
@@ -219,12 +232,24 @@ while RunSession
         
         CorrectResponse = S.Block.Table.CorrectResponse{TrialType};
         
+        % kludge for debugging, indicate correct choice
+        if BpodSystem.EmulatorMode
+            switch CorrectResponse
+                case 'Left'
+                    SideLightOn = {LeftLight, 255};
+                case 'Right'
+                    SideLightOn = {RightLight, 255};
+            end
+        end
+        
         
         if S.GUI.ITI
             ITI = inf;
             while ITI > 3 * S.GUI.ITI   % cap exponential distribution at 3 * expected mean value (1/rate constant (lambda))
                 ITI = exprnd(S.GUI.ITI);
             end        
+        else
+            ITI = 0;
         end
                                
         sma = NewStateMatrix(); % Assemble state matrix
@@ -455,7 +480,12 @@ while RunSession
             BpodSystem.Data.SwitchParameterCriterion = switchParameterCriterion;
             
             
-            
+            % plot performance criterion that determines automated
+            % reversals                        
+            set(cr.splh, 'XData', 1:currentTrial, 'YData', BpodSystem.Data.SwitchParameter);
+            set(cr.clh, 'XData', [1 currentTrial], 'YData', [switchParameterCriterion switchParameterCriterion]);
+            set(cr.ax, 'YLim', [0 1]);
+
             %% Save protocol settings to reflect updated values
             BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
             BpodSystem.ProtocolSettings = S; % copy settings back prior to saving
@@ -467,13 +497,11 @@ while RunSession
         end
         HandlePauseCondition; % Checks to see if the protocol is paused. If so, waits until user resumes.
         if BpodSystem.BeingUsed == 0
-            fclose(valveSlave);
-            delete(valveSlave);
+            if ~BpodSystem.EmulatorMode 
+                fclose(valveSlave);
+                delete(valveSlave);
+            end
             return
         end
         currentTrial = currentTrial + 1;
-end 
-if BpodSystem.BeingUsed == 0
-    fclose(valveSlave);
-    delete(valveSlave);
 end
