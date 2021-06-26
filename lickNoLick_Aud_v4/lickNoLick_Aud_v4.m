@@ -36,13 +36,13 @@ function lickNoLick_Aud_v4
               
         'GUIPanels.Stimuli', {'UsePulsePal', 'MeanSoundFreq1', 'MeanSoundFreq2', 'MeanSoundFreq3', 'MeanSoundFreq4', 'SoundAmplitude', 'Reward', 'PunishValveTime', 'PunishSoundOn', 'PunishSoundAmplitude', 'WhiteNoiseOn', 'WhiteNoiseAmplitude'};... %'neutralToneOn', 'TsToneOn'};...
         'GUI.UsePulsePal', 0;...         
-        'GUI.MeanSoundFreq1', 4000;... % Hz; high value A 
-        'GUI.MeanSoundFreq2', 8000;... % low value B 
-        'GUI.MeanSoundFreq3', 20000;... % neutral tone C 
-        'GUI.MeanSoundFreq4', 15000;... % Neutral tone D 
+        'GUI.MeanSoundFreq1', 10000;... % Hz; high value A 
+        'GUI.MeanSoundFreq2', 20000;... % low value B 
+        'GUI.MeanSoundFreq3', 4000;... % neutral tone C 
+        'GUI.MeanSoundFreq4', 8000;... % Neutral tone D 
         'GUI.SoundAmplitude', 50;...  % sound amplitude in db
         'GUI.Reward', 8;...
-        'GUI.PunishValveTime', 0.2;... %s  
+        'GUI.PunishValveTime', 0.4;... %s  
         'GUI.PunishSoundOn', 0;...
         'GUIMeta.PunishSoundOn.Style', 'checkbox';...
         'GUI.PunishSoundAmplitude', 0;... % punish sound amplitude in db
@@ -201,8 +201,8 @@ function lickNoLick_Aud_v4
             case 'BNCState'
                 npgBNCArg = bitset(npgBNCArg, pgSettings.triggerNumber); % its a BNC trigger
         end
-        olfWireArg = 0;
-        olfBNCArg = 0;
+%         olfWireArg = 0;
+%         olfBNCArg = 0;
 %         switch olfSettings.triggerType
 %             case 'WireState'
 %                 olfWireArg = bitset(olfWireArg, olfSettings.triggerNumber);
@@ -214,12 +214,12 @@ function lickNoLick_Aud_v4
     MaxTrials = 1000;
 
     % Outcomes -> NaN: future trial, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot) 
-    ReinforcementOutcome = []; % local version of BposSystem.Data.ReinforcementOutcome
+    ReinforcementOutcome = ''; % local version of BposSystem.Data.ReinforcementOutcome
     
     BpodSystem.Data.TrialTypes = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.TrialOutcome = []; % onlineFilterTrials dependent on this variable
     BpodSystem.Data.CSValence = []; % 1 = CS+, -1 = CS-, 0 = unCued or a 'control' Sound that doesn't affect outcomes or adaptive reversals
-    BpodSystem.Data.ReinforcementOutcome = []; % i.e. Reward, Punish, WNoise, or Neutral
+    BpodSystem.Data.ReinforcementOutcome = ''; % i.e. Reward, Punish, WNoise, or Neutral
     BpodSystem.Data.WaterAmount = []; % i.e. WaterAmount
     BpodSystem.Data.SoundAmplitude = []; % i.e. SoundAmplitude    
     BpodSystem.Data.LickAction = []; % 'lick' or 'noLick' 
@@ -290,7 +290,7 @@ function lickNoLick_Aud_v4
             Sound1 =  Sound1 + WhiteNoise;
             Sound2 =  Sound2 + WhiteNoise;
             Sound3 =  Sound3 + WhiteNoise;
-            Sound4 =  Sound3 + WhiteNoise;
+            Sound4 =  Sound4 + WhiteNoise;
         else
             Sound1 =  Sound1;
             Sound2 =  Sound2;
@@ -566,6 +566,7 @@ function lickNoLick_Aud_v4
             %TrialOutcome -> NaN: future trial or omission, -1: miss, 0: false alarm, 1: hit, 2: correct rejection (see TrialTypeOutcomePlot)
             if  isnan(BpodSystem.Data.RawEvents.Trial{currentTrial}.States.PostUsRecording)
                 TrialOutcome = NaN;
+                ReinforcementOutcome = '';
             else
                 if ~isnan(BpodSystem.Data.RawEvents.Trial{end}.States.AnswerLick(1))
                     lickAction = 'lick';

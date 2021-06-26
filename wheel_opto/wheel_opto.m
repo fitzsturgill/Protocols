@@ -69,11 +69,11 @@ function wheel_opto
         % linear ramp of sound for 10ms at onset and offset
         neutralTone = taperedSineWave(SF, 10000, 0.1, 0.01); % 10ms taper
         neutralTone = neutralTone / 100;
-        laserTone = SoundGenerator_SL(SF, 8000, 2.5, 50);
-        laserTone2 = SoundGenerator_SL(SF, 4000, 1, 50);
+        laserTone1 = SoundGenerator_SL(SF, 0, 2, 0);
+        laserTone2 = SoundGenerator_SL(SF, 0, 2, 0);
         PsychToolboxSoundServer('init')
         PsychToolboxSoundServer('Load', 1, neutralTone);
-        PsychToolboxSoundServer('Load', 2, laserTone);
+        PsychToolboxSoundServer('Load', 2, laserTone1);
         PsychToolboxSoundServer('Load', 3, laserTone2);
         BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_PlaySound';
     end
@@ -123,13 +123,12 @@ function wheel_opto
     
     %% initialize trial types and outcomes
     MaxTrials = 1000;
-    
+    m = 1;    
     %% Main trial loop
     nextReward = 0; % first reward delivered immediately after baseline in first trial
-    totalReward = 0;
+    totalReward = 0;    
     for currentTrial = 1:MaxTrials 
-     
-% %       for currentTrial = 1:22
+     % %       for currentTrial = 1:22
         nRewardThisTrial = 0;
         if S.GUI.alternateLEDs
             LEDmode = rem(currentTrial, 3);
@@ -192,7 +191,9 @@ function wheel_opto
         S = BpodParameterGUI('sync', S); % Sync parameters with BpodParameterGUI plugin
 
         ITI = inf;
-        ITI = rand * 6 % kludgy flatly distributed ITI so that 
+        while ITI > 6  ||  ITI < 3
+            ITI = rand * 6; % kludgy flatly distributed ITI so that 
+        end
 
 
         %% state matrix construction                
@@ -209,8 +210,17 @@ function wheel_opto
         % for loop skipped if no reward occurs this trial
 
         for counter = linspace(1,length(rewardTimes) - 1, length(rewardTimes) - 1) 
+%             if S.GUI.alternateReward
+%                if rand < 0.5
+%                    useReward = true;
+%                else
+%                    useReward = false;
+%                end
+%             else
+%                 useReward = false;
+%             end
             if S.GUI.alternateReward
-               if rand < 0.5
+               if mod(m,2)== 1
                    useReward = true;
                else
                    useReward = false;
@@ -218,6 +228,7 @@ function wheel_opto
             else
                 useReward = false;
             end
+            m = m + 1;
             if useReward
                 nextState = ['Reward' num2str(counter)];
             else
@@ -238,7 +249,7 @@ function wheel_opto
                 sma = AddState(sma,'Name', ['Reward' num2str(counter)], ... 
                     'Timer', S.RewardValveTime,... %
                     'StateChangeConditions', {'Tup', ['IRI' num2str(counter + 1)]},...
-                    'OutputActions', {'ValveState', S.GUI.RewardValveCode});    % removed neutral tone 12/12/19 , 'SoftCode', 1          
+                    'OutputActions', {'ValveState', S.GUI.RewardValveCode, 'SoftCode', 3});    % removed neutral tone 12/12/19 , 'SoftCode', 1          
             end
         end
         sma = AddState(sma,'Name', ['IRI' num2str(length(rewardTimes))], ... % use global timer
